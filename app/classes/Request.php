@@ -12,27 +12,28 @@ class Request {
 
         foreach ($rule as $key => $value) {
             $check = $data[$key] ?? null;
-            if(!$check  ) {
+            if(!$check ) {
                 echo json_encode(["message" => "$key is required"]);
-                return;
+                exit; 
             }
             $minLength = $value["min-length"] ?? null ;
             if( $minLength  && strlen($check) < $value["min-length"]) {
                 echo json_encode(["message" => "$key must be greater than " . $value["min-length"]]);
-                return;
+                exit; 
             }
             $maxLength = $value["max-length"] ?? null ;
             if( $maxLength  && strlen($check) > $value["max-length"]) {
                 echo json_encode(["message" => "$key must be less than " . $value["max-length"]]);
-                return;
+                exit; 
             }
             $mail = $value["mail"] ?? null ;
             if( $mail && (strlen($check) < ( $value["min-length"] ?? 5) || strpos($check, '@') === false)) {
                 echo json_encode(["message" => "it must be a valid email"]);
-                return;
+                exit; 
             }
-            return $data ;
+           
         }
+        return $data;
     }
     
 }

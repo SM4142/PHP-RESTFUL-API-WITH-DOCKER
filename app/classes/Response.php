@@ -9,7 +9,6 @@ class Response{
         http_response_code($httpStatus);
         header('Content-Type: application/json');
         echo $response;
-
     }
 
 

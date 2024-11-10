@@ -22,8 +22,9 @@ class UserController {
     ];
 
     $data = Request::Validation($rule);
+    Response::sendResponse($data);
 
-    Response::sendResponse($data );
+
    }
    
 }   
