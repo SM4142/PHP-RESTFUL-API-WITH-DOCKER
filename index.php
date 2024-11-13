@@ -7,6 +7,13 @@ spl_autoload_register(function ($class) {
     require str_replace('\\', '/', $class) . '.php';
 });
 
+require __DIR__ . '/vendor/autoload.php';  
+
+use Dotenv\Dotenv;  
+
+$dotenv = Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
 
 
 

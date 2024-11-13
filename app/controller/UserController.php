@@ -3,13 +3,18 @@ namespace app\controller;
 
 use app\classes\Request;
 use app\classes\Response;
-
+use app\model\User;
 
 class UserController {
    public function index() {
-    $data = [["message" => "Hello World"]];
-    $data[0]["message"] = "Hello World2";
-    Response::sendResponse($data);
+    $users = User::fetchAll();
+    if ($users) {
+       
+        Response::sendResponse($users);
+    } else {
+        echo "Veritabanı bağlantısı başarısız!";
+    }
+    
  
    }
 

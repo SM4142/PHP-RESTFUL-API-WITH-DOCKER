@@ -2,7 +2,26 @@ services:
   php-web :
     build: .
     ports:
-      - "80:80"
+      - "3000:80"
     volumes:
       - .:/var/www/html
-      
+    depends_on:
+      - sql
+  sql:
+    image: mysql:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+  phpmyadmin:
+    image: phpmyadmin:latest
+    ports:
+      - 9001:80
+    environment:
+      - PMA_ARBITRARY=1
+ 
+volumes:
+  dbdata:
