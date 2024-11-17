@@ -7,14 +7,9 @@ use app\model\User;
 
 class UserController {
    public function index(  $get ) {
-    var_dump($get);
-    $users = User::pagination(10 );
-    if ($users) {
-       
-        Response::sendResponse($users);
-    } else {
-        echo "Veritabanı bağlantısı başarısız!";
-    }
+
+    Response::sendResponse($get);
+
     
  
    }
