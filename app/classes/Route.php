@@ -10,27 +10,37 @@ class Route {
         $method = "GET";
         $path = $path;
         $controller = $controller;
-        Route::RoutingFunction( $method , $path , $controller);
+        return new self( $method , $path , $controller);
         
     }
     public static function POST ( $path , $controller){
         $method = "POST";
         $path = $path;
         $controller = $controller;
-        Route::RoutingFunction( $method , $path , $controller);
+        return new self( $method , $path , $controller);
     }
     public static function PUT ($path , $controller){
         $method = "PUT";
         $path = $path;
         $controller = $controller;
-        Route::RoutingFunction( $method , $path , $controller);
+        return new self( $method , $path , $controller);
     }
     public static function DELETE ( $path , $controller){
         $method= "DELETE";
         $path = $path;
         $controller = $controller;
-    
+        return new self( $method , $path , $controller);
+       
+    }
+    public function __construct($method , $path , $controller) {
         Route::RoutingFunction( $method , $path , $controller);
+    }
+    public function middleware($middleware) {
+        if (is_array($middleware)) {
+            foreach ($middleware as $func) {
+                $middleware_item = new $func();
+            }
+        }
     }
 
     private static function RoutingFunction($method, $path, $controller) {

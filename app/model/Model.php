@@ -32,7 +32,7 @@ class Model {
         return $item_number;
     }
 
-    public static function pagination($limit , $page = 0) {
+    public static function pagination($limit , $page = 1) {
         if( ! is_int($limit) || $limit <= 0){ {
             return ["message" => "Pagination  number must be greater than 0"];
         }
@@ -44,6 +44,9 @@ class Model {
         if(self::$db == null) {
             self::$db  = Database::connect();
         }
+
+        $page = $page - 1;
+        
         $table_name = static::$table ;
 
         $item_number = self::count();
