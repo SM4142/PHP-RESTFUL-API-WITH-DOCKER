@@ -95,6 +95,19 @@ class Model {
         return true;
     }
     
+    
+    public static function where ($column , $value) {
+        if(self::$db == null) {
+            self::$db  = Database::connect();
+        }
+        $table_name = static::$table ;
+        $stmt = self::$db->prepare("SELECT * FROM  $table_name  WHERE :column = :value ");
+        $stmt->bindValue('column' , $column , PDO::PARAM_STR);
+        $stmt->bindValue('value' , $value ); 
+        $fetched = $stmt->fetchAll(PDO::FETCH_ASSOC );
+        self::closeConnection();
+        return $fetched;
+    }
 
 
 }
