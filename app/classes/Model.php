@@ -1,8 +1,7 @@
 <?php 
 
-namespace app\model;
+namespace app\classes;
 
-use app\classes\Database;
 use PDO;
 
 class Model {

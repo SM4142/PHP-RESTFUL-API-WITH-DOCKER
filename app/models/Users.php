@@ -1,8 +1,8 @@
 <?php
 
-namespace app\model;
+namespace app\models;
 
-use app\model\Model;
+use app\classes\Model;
 
 class Users extends Model {
     protected  static $table = "users";

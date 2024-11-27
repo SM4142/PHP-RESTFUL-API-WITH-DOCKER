@@ -1,15 +1,16 @@
 <?php
-namespace app\controller;
+namespace app\controllers;
 
 use app\classes\Request;
 use app\classes\Response;
-use app\model\Users;
+use app\models\Users;
 
 class UserController {
    public function index(  $get ) {
 
-    $user = Users::where("name" , "semih");
-    Response::sendResponse($user);
+    $Users = Users::fetchAll();
+
+    Response::sendResponse($Users);
    }
 
 

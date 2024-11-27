@@ -1,7 +1,6 @@
 <?php 
-namespace database\migrations;
+namespace app\classes;
 
-use app\classes\Database;
 use app\classes\Schema;
 
 class Migration{

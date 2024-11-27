@@ -1,18 +1,20 @@
 <?php
-spl_autoload_register(function ($class) {
-    require str_replace('\\', '/', $class) . '.php';
-});
-require __DIR__ . '/vendor/autoload.php';
 
 use app\classes\Schema;
+
 use Dotenv\Dotenv;  
+
+use database\migrations\UserMigration;
+
+require __DIR__ . '/vendor/autoload.php';
+
+spl_autoload_register(function ($class) {
+    require_once str_replace('\\', '/', $class) . '.php';
+});
 
 $dotenv = Dotenv::createImmutable(__DIR__);
 
 $dotenv->load();
-
-
-use database\migrations\UserMigration;
 
 $columns = UserMigration::up( new Schema() );
 if(isset($columns) ){
