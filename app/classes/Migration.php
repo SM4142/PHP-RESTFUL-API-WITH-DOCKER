@@ -5,26 +5,87 @@ use app\classes\Schema;
 
 class Migration{
     
-    protected static $items = [];
+
     protected static $db = null;
+
     private static  function closeConnection() {
         self::$db = null;
     }
-    public function up(Schema $item) {
-        if(self::$db == null) {
-            self::$db  = Database::connect();
+    
+    public static function up() {
+        $directory = 'database/migrations';
+        if (!file_exists($directory)) {
+            echo "No migrations found\n";
+            return;
         }
-        self::$items[] = $item;
-        $createTableSql ="CREATE TABLE IF NOT EXISTS users (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            name  VARCHAR(50) NOT NULL,
-            email VARCHAR(100) NOT NULL UNIQUE,
-            password VARCHAR(50) NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )";
-        static::$db->exec($createTableSql);
-        self::closeConnection();
+    
+        $files = glob($directory . "/*.php");
+        foreach ($files as $file) {
+    
+            $fileName = basename($file, '.php');
+            if (strpos($fileName, '-') !== false) {
+                $parts = explode('-', $fileName);
+                $className = end($parts); 
+            } else {
+                $className = $fileName;
+            }
+
+            $newClassName = 'database\\migrations\\' . $className;
+    
+            require_once $file;
+    
+            if (!class_exists( $newClassName )) {
+                echo "Class $newClassName  not found in $file\n";
+                continue;
+            }
+    
+            if (!method_exists( $newClassName , 'up')) {
+                echo "Class $newClassName  does not have an up method\n";
+                continue;
+            }
+            $newClassName ::up(new Schema());
+            echo "$className migrated successfully\n";
+        }
+    }
+    
+
+    public static function down() {
+        $directory = 'database/migrations';
+        if (!file_exists($directory)) {
+            echo "No migrations found\n";
+            return;
+        }
+    
+        $files = glob($directory . "/*.php");
+        
+        $files  = array_reverse($files);
+        
+        foreach ($files as $file) {
+    
+            $fileName = basename($file, '.php');
+            if (strpos($fileName, '-') !== false) {
+                $parts = explode('-', $fileName);
+                $className = end($parts); 
+            } else {
+                $className = $fileName;
+            }
+
+            $newClassName = 'database\\migrations\\' . $className;
+    
+            require_once $file;
+    
+            if (!class_exists( $newClassName )) {
+                echo "Class $newClassName  not found in $file\n";
+                continue;
+            }
+    
+            if (!method_exists( $newClassName , 'up')) {
+                echo "Class $newClassName  does not have an up method\n";
+                continue;
+            }
+            $newClassName ::down(new Schema());
+            echo "$className deleted successfully\n";
+        }
     }
 }
 ?>

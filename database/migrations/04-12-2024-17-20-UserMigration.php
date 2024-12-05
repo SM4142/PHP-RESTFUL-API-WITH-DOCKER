@@ -2,21 +2,25 @@
 
 namespace database\migrations;
 
-use app\classes\enums\OnAction;
+use app\classes\Migration;
 use app\classes\Schema;
 
 class UserMigration 
 {
-    protected static $tableName = 'users';
+    protected static $tableName = 'Users';
     public static function up(Schema $colum) {
       $colum->Table(self::$tableName);
       $colum->Id();
-      $colum->ForeignKey("role_id")->References("id")->On("roles")->OnDelete(OnAction::SET_NULL)->OnUpdate(onAction::CASCADE); 
       $colum->Text("name", 50)->NullAble(true);
       $colum->Text("email");
-      return $colum->Create();
-     
+      $colum->Create();
     }
+
+    public static function down(Schema $colum) {
+      $colum->Table(self::$tableName);
+      $colum->Drop();
+    }
+
     
 }
 

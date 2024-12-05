@@ -1,6 +1,7 @@
 <?php 
 namespace app\classes;
 
+use database\migrations\UserMigration;
 use DateTime;
 
 class AllCommands{
@@ -8,23 +9,22 @@ class AllCommands{
     public static function Create(array $commands){
        switch ($commands[1]) {
            case 'create-controller':
-                if(! isset($commands[2])){
-                    echo "Write a controller name\n";
-                }
                 AllCommands::CreateController($commands[2]);
                 break;
             case 'create-model':
-                if(! isset($commands[2])){
-                    echo "Write a migration name\n";
-                }
                 AllCommands::CreateModel($commands[2]);
                 break;
             case 'create-migration':
-                if(! isset($commands[2])){
-                    echo "Write a migration name\n";
-                }
                 AllCommands::CreateMigration($commands[2]);
                 break;
+            case 'migrate::up':
+                AllCommands::MigrateUp();
+                break;
+            case 'migrate::down':
+                AllCommands::MigrateDown();
+                break;
+            case 'migrate::restart':
+                AllCommands::MigrateRestart();
                 break;
             default:
                 echo "Unknown command\n";
@@ -32,6 +32,9 @@ class AllCommands{
        }
     }
     private static  function CreateController(string $name){
+        if(! isset($commands[2])){
+            echo "Write a controller name\n";
+        }
 
         $directory = 'app/controllers';
         if (!file_exists($directory)) {
@@ -61,23 +64,28 @@ class AllCommands{
         echo "Controller $name created\n";
     }
     private static function CreateMigration(string $name){
+        if(! isset($commands[2])){
+            echo "Write a migration name\n";
+        }
 
         $directory = 'database/migrations';
         if (!file_exists($directory)) {
             mkdir($directory);
         }
+
         $date = new DateTime();
         $date = $date->format('d-m-Y-H-i');
         $controllerFileName = $directory . "/" . $date . '-' . $name . '.php';
+
         if (file_exists($controllerFileName)) {
             echo "Migration $name already exists\n";
             return;
         }
+
         $newName[] = $name;
         if(! strpos($name, 'Migration') === false){
             $newName = explode('Migration', $name);
         }
-
 
         $content = "<?php\n\n" .
         "namespace database\\migrations;\n\n" .
@@ -85,11 +93,15 @@ class AllCommands{
         "class $name\n" .
         "{\n" .
         "    protected static \$tableName = '$newName[0]';\n" .
-        "    public static function up(Schema \$colum)\n" .
-        "    {\n" .
+        "    public static function up(Schema \$colum) {\n" .
+        "        \$colum->Table(self::\$tableName);\n".
         "        \$colum->Id();\n" .
-        "        return \$colum->GetSchema();\n" .
-        "    }\n" .
+        "        \$colum->Create();\n".
+        "    }\n\n" .
+        "    public static function down(Schema \$colum) {\n" .
+        "       \$colum->Table(self::\$tableName);\n".
+        "       \$colum->Drop();\n" .
+        "    }\n\n" .
         "}\n";
 
         file_put_contents($controllerFileName, $content);
@@ -97,6 +109,9 @@ class AllCommands{
         echo "Migaration $name created\n";
     }
     private static function CreateModel(string $name){
+        if(! isset($commands[2])){
+            echo "Write a migration name\n";
+        }
 
         $directory = 'app/models';
         if (!file_exists($directory)) {
@@ -104,6 +119,7 @@ class AllCommands{
         }
 
         $controllerFileName = $directory . "/" . $name . '.php';
+        
         if (file_exists($controllerFileName)) {
             echo "Model $name already exists\n";
             AllCommands::CreateMigration($name . "Migration");
@@ -113,7 +129,7 @@ class AllCommands{
 
         $content = "<?php\n\n" .
         "namespace app\\models;\n\n" .
-        "use app\model\Model;\n\n" .
+        "use app\classes\Model;\n\n" .
         "class $name extends Model\n " .
         "{\n" .
         "     protected  static \$table = '$name';\n" .
@@ -123,6 +139,18 @@ class AllCommands{
 
         echo "Model $name created\n";
         AllCommands::CreateMigration($name . "Migration");
+    }
+    public static function MigrateUp() {
+        Migration::up();
+    }
+    
+    
+    public static function MigrateDown(){
+       Migration::down();
+    }
+    public static function MigrateRestart(){
+        AllCommands::MigrateDown();
+        AllCommands::MigrateUp();
     }
 
 }
