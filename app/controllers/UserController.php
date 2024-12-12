@@ -8,9 +8,12 @@ use app\models\Users;
 class UserController {
    public function index(  $get ) {
 
-    $Users = Users::fetchAll();
+    $user = new Users();
 
-    Response::sendResponse($Users);
+    $user->name = "semih";
+    $user->email = "semih@gmail.com";
+    Response::sendResponse($user->save());
+    
    }
 
 

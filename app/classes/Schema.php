@@ -3,13 +3,14 @@
 namespace app\classes;
 
 use app\classes\enums\OnAction;
+use PDO;
 
 class Schema {
-    protected $columns = [];
-    protected $column = "" ; 
-    protected $table = "";
-    protected static $db = null;
-    protected $foreignArrayKeys = [];
+    private $columns = [];
+    private $column = "" ; 
+    private $table = "";
+    private static $db = null;
+    private $foreignArrayKeys = [];
 
     public function Id(string $name = "id") {
         $this->columns[$name] =
@@ -31,7 +32,6 @@ class Schema {
             [
             "type" => "BOOLEAN",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -42,7 +42,6 @@ class Schema {
             [
             "type" => "DATE",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -53,10 +52,42 @@ class Schema {
             [
             "type" => "DATETIME",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
+        return $this;
+    }
+    public function CreatedAt(string $name ) {
+        $this->columns[$name] = 
+        [
+            "type" => "DATETIME",
+            "nullable" => false,
+            "default" => "CURRENT_TIMESTAMP",
+        ];
+    }
+    public function UpdatedAt(string $name ) {
+        $this->columns[$name] = 
+        [
+            "type" => "DATETIME",
+            "nullable" => false,
+            "default" => "CURRENT_TIMESTAMP",
+        ];
+    }
+    public function SetTimestamps( ) {
+        $this->columns["created_at"] = 
+        [
+            "type" => "DATETIME",
+            "nullable" => false,
+            "default" => "CURRENT_TIMESTAMP",
+        ];
+
+        $this->columns["updated_at"] = 
+        [
+            "type" => "DATETIME",
+            "nullable" => false,
+            "default" => "CURRENT_TIMESTAMP",
+        ];
+
         return $this;
     }
     public function Number(string $name ) {
@@ -64,7 +95,6 @@ class Schema {
             [
             "type" => "INT",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -75,7 +105,6 @@ class Schema {
             [
             "type" => "INT",
             "nullable" => false,
-            "default" => null,
             "unsigned" => true
             ]
         ;
@@ -87,7 +116,6 @@ class Schema {
             [
             "type" => "BIGINT",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -98,7 +126,6 @@ class Schema {
             [
             "type" => "BIGINT",
             "nullable" => false,
-            "default" => null,
             "unsigned" => true
             ]
         ;
@@ -110,7 +137,6 @@ class Schema {
             [
             "type" => "FLOAT",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -124,7 +150,6 @@ class Schema {
             "type" => "VARCHAR",
             "length" => $length,
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -135,7 +160,6 @@ class Schema {
             [
             "type" => "MEDIUMTEXT",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -146,7 +170,6 @@ class Schema {
             [
             "type" => "LONGTEXT",
             "nullable" => false,
-            "default" => null,
             ]
         ;
         $this->column = $name;
@@ -217,15 +240,29 @@ class Schema {
         }
         return $this;
     }
+
     private function CloseConnection(){
         self::$db = null;
     }
-    public function Create () {
+    public function returnSchema () {
+
+        return $this->columns ;
+        
+    }
+    public function Create () : bool {
 
         if(self::$db == null) {
 
             self::$db  = Database::connect();
 
+        }
+
+        $stmt = self::$db->query("SHOW TABLES LIKE '$this->table'");
+
+        $check = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if(count($check) > 0) {
+            return false;
         }
 
         $create_table_sql ="CREATE TABLE IF NOT EXISTS $this->table (\n";
@@ -240,7 +277,25 @@ class Schema {
 
             $index = isset($value["index"]) ? $value["index"] : '' ;
 
-            $default = isset($value["default"]) ? ' DEFAULT ' . $value["default"] : '' ;
+            $default = "";
+
+            $defaultValues = array(
+                "CURRENT_TIMESTAMP",
+                "NULL",
+                "CURRENT_TIME",
+                "CURRENT_DATE",
+                "UTC_TIMESTAMP"
+            );
+            
+            $rule = isset($value["default"]) && in_array($value["default"], $defaultValues);
+            
+            if($rule) {
+                $default = isset($value["default"]) ? ' DEFAULT ' . $value["default"] : '' ;
+            } else {
+                $default = isset($value["default"]) ? ' DEFAULT ' . var_export($value["default"], true) : '' ;
+            }
+
+            
 
             $unsigned = isset($value["unsigned"]) ? ' UNSIGNED' : '' ;
 
@@ -257,7 +312,6 @@ class Schema {
 
             }
        
-
             if($columns_last_key == $key) {
 
                 $create_table_sql .= "$key " . $value["type"] . $length . " " . $nullable . " " . $unsigned . " " . $auto_increment . " " . $default . " " . $index . (count($this->foreignArrayKeys) > 0 ? " , \n" : "\n");
@@ -282,19 +336,32 @@ class Schema {
 
         $this->CloseConnection();
 
-        return $create_table_sql;    
+        return true;    
         
     }
-    public function Drop () {
+    public function Drop () : bool {
         if(self::$db == null) {
             self::$db  = Database::connect();
         }
+
+        $stmt = self::$db->query("SHOW TABLES LIKE '$this->table'");
+        $check = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if( count($check) == 0) {
+            return false;
+        }
+    
         self::$db->exec("DROP TABLE IF EXISTS $this->table");
+    
         $this->CloseConnection();
+    
+        return true;
+
     }
     public function GetSchema() {
 
         return $this->columns;
+        
     }
     
 }

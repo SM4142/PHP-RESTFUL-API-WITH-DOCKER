@@ -5,36 +5,24 @@ use database\migrations\UserMigration;
 use DateTime;
 
 class AllCommands{
+
  
     public static function Create(array $commands){
-       switch ($commands[1]) {
-           case 'create-controller':
-                AllCommands::CreateController($commands[2]);
-                break;
-            case 'create-model':
-                AllCommands::CreateModel($commands[2]);
-                break;
-            case 'create-migration':
-                AllCommands::CreateMigration($commands[2]);
-                break;
-            case 'migrate::up':
-                AllCommands::MigrateUp();
-                break;
-            case 'migrate::down':
-                AllCommands::MigrateDown();
-                break;
-            case 'migrate::restart':
-                AllCommands::MigrateRestart();
-                break;
-            default:
-                echo "Unknown command\n";
-                break;
-       }
+       $result = match ($commands[1]) {
+         'create::controller'=> 
+         (! isset($commands[2])) ? "Write a controller name\n" : AllCommands::CreateController($commands[2]),
+         'create::model'=> 
+         (! isset($commands[2])) ? "Write a model name\n" : AllCommands::CreateModel($commands[2]),
+         'create::migration'=> 
+         (! isset($commands[2])) ? "Write a migration name\n" : AllCommands::CreateMigration($commands[2]),
+         'migrate::up'=> AllCommands::MigrateUp(),
+         'migrate::down'=> AllCommands::MigrateDown(),
+         'migrate::restart'=> AllCommands::MigrateRestart(),
+         default => 'unknown method ',
+       };
+       echo $result ;
     }
-    private static  function CreateController(string $name){
-        if(! isset($commands[2])){
-            echo "Write a controller name\n";
-        }
+    private static  function CreateController(string $name ){
 
         $directory = 'app/controllers';
         if (!file_exists($directory)) {
@@ -64,9 +52,6 @@ class AllCommands{
         echo "Controller $name created\n";
     }
     private static function CreateMigration(string $name){
-        if(! isset($commands[2])){
-            echo "Write a migration name\n";
-        }
 
         $directory = 'database/migrations';
         if (!file_exists($directory)) {
@@ -89,18 +74,20 @@ class AllCommands{
 
         $content = "<?php\n\n" .
         "namespace database\\migrations;\n\n" .
-        "use app\\classes\\Schema;\n\n" .
-        "class $name\n" .
+        "use app\\classes\\Schema;\n" .
+        "use app\classes\Migration;\n\n".
+        "class $name extends Migration \n" .
         "{\n" .
         "    protected static \$tableName = '$newName[0]';\n" .
         "    public static function up(Schema \$colum) {\n" .
         "        \$colum->Table(self::\$tableName);\n".
         "        \$colum->Id();\n" .
-        "        \$colum->Create();\n".
+          "      \$colum->SetTimestamps();" .
+        "        return \$colum;\n" .
         "    }\n\n" .
-        "    public static function down(Schema \$colum) {\n" .
+        "    public static function down(Schema \$colum) : Schema {\n" .
         "       \$colum->Table(self::\$tableName);\n".
-        "       \$colum->Drop();\n" .
+        "       return \$colum;\n" .
         "    }\n\n" .
         "}\n";
 
@@ -109,9 +96,6 @@ class AllCommands{
         echo "Migaration $name created\n";
     }
     private static function CreateModel(string $name){
-        if(! isset($commands[2])){
-            echo "Write a migration name\n";
-        }
 
         $directory = 'app/models';
         if (!file_exists($directory)) {
@@ -130,9 +114,8 @@ class AllCommands{
         $content = "<?php\n\n" .
         "namespace app\\models;\n\n" .
         "use app\classes\Model;\n\n" .
-        "class $name extends Model\n " .
-        "{\n" .
-        "     protected  static \$table = '$name';\n" .
+        "class $name extends Model  {\n\n " .
+        "     protected  static \$table = '$name';\n\n" .
         "}\n";
 
         file_put_contents($controllerFileName, $content);
@@ -141,12 +124,12 @@ class AllCommands{
         AllCommands::CreateMigration($name . "Migration");
     }
     public static function MigrateUp() {
-        Migration::up();
+        Migration::upTables();
     }
     
     
     public static function MigrateDown(){
-       Migration::down();
+       Migration::downTables();
     }
     public static function MigrateRestart(){
         AllCommands::MigrateDown();
