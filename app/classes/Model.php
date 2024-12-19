@@ -8,22 +8,32 @@ class Model {
 
     protected static  $table ;
 
-    protected string $id ;
+    protected static string $id ;
 
     private static $db = null;
 
-    protected array $nullAbleArray = [];
+    protected static array $nullAbleArray = [];
 
-    protected array $notNullArray = [];
+    protected static array $notNullArray = [];
 
-    protected array $hiddenArray = [];
+    protected static array $hiddenArray = [];
 
     // execute things start
 
     protected static $query ="";
+
     protected static array $executeWhereArray = [];
+
+    protected static array $executeOrWhereArray = [];
+
     protected static array $executeOrderArray = [];
+
+    protected static array $executeUpdateArray = [];
+
     protected static string $whereText = "";
+
+    protected static string $orWhereText = "";
+
     protected static string $orderText = "";
 
      // execute things ends
@@ -31,17 +41,17 @@ class Model {
     protected static array $unknowColumns = [];
 
     // get and set things start
-    protected array $attributes = [];
+    protected static array $attributes = [];
     // get and set things ends
 
 
 
     public function __set($name, $value) {
-        $this->attributes[$name] = $value;
+        static::$attributes[$name] = $value;
     }
 
     public function __get($name) {
-        return $this->attributes[$name] ? $this->attributes[$name] : null;
+        return static::$attributes[$name] ?? null;
     }
 
     public  function __construct() {
@@ -62,6 +72,7 @@ class Model {
 
     }
     public static function checkColumns(string $column) {
+
         $columns = self::returnSchema();
 
         if(!isset($columns[$column])) {
@@ -76,7 +87,7 @@ class Model {
         foreach ($schema as $key => $value) {
 
             $rule = $schema[$key]["nullable"] == false && 
-            ! isset($this->attributes[$key] ) && 
+            ! isset(static::$attributes[$key] ) && 
             ! isset($schema[$key]["index"]) == "PRIMARY KEY" &&
             ! isset($schema[$key]["default"]);
 
@@ -90,9 +101,9 @@ class Model {
         $keys = " ( ";
         $values = " VALUES ( ";
 
-        $last_key = array_keys($this->attributes)[count($this->attributes) - 1];
+        $last_key = array_keys(static::$attributes)[count(static::$attributes) - 1];
 
-        foreach ($this->attributes as $key => $value) {
+        foreach (static::$attributes as $key => $value) {
 
             if($key == $last_key) {
 
@@ -100,24 +111,15 @@ class Model {
 
                 $values .= " :$key ";
 
-                if(gettype($value) == "string") {
-
-                    $this->attributes[$key] = "'$value'";
-    
-                }
-
                 break;
+
             }
 
             self::checkColumns($key);
 
             $keys .= " `$key` , ";
 
-            if(gettype($value) == "string") {
-
-                $this->attributes[$key] = "'$value'";
-
-            }
+            static::$attributes[$key] = "$value";
 
             $values .= " :$key , ";
 
@@ -131,11 +133,11 @@ class Model {
 
         $stmt = self::$db->prepare($query);
 
-        $stmt->execute($this->attributes);
+        $stmt->execute(static::$attributes);
 
         self::closeConnection();
         
-        return   $this->attributes ;
+        return   static::$attributes ;
         if(count(self::$unknowColumns) > 0) {
             return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
         }
@@ -143,12 +145,18 @@ class Model {
         return self::returnSchema();
 
     }
+
+
     public static function fetchAll() {
        
         $stmt = self::$db->prepare(self::$query); 
+
         $fetched = $stmt->fetchAll(PDO::FETCH_ASSOC );
+
         self::closeConnection();
+
         return $fetched;
+        
     }
     public static function where (string $column  , string $value ) {
 
@@ -171,12 +179,40 @@ class Model {
         return new static();
 
     }
+    public static function orWhere (string $column  , string $value ) {
+
+        self::checkColumns($column);
+
+        $placeholder = ":or$column" . count(self::$executeOrWhereArray);
+
+        if(count(self::$executeOrWhereArray) == 0) {
+
+            self::$executeOrWhereArray[$placeholder] = $value;
+
+            self::$orWhereText .= " OR "." $column = $placeholder ";
+
+        }else{
+
+            self::$executeOrWhereArray[$placeholder] = $value;
+
+            self::$orWhereText .= " AND $column = $placeholder ";
+
+        }
+
+        return new static();
+
+    }
+
     public static function whereIn (string $column  , array $value ) {
        
         self::checkColumns($column);
 
         $placeholders = implode(", ", array_map(function($index) use ($column) {
-            return ":$column$index";
+
+            $text = ":in$column$index" ;
+
+            return $text ;
+
         }, array_keys($value)));
 
 
@@ -191,11 +227,46 @@ class Model {
         }
 
         foreach ($value as $index => $val) {
-            self::$executeWhereArray["$column$index"] = $val;
+
+            self::$executeWhereArray[":in$column$index"] = $val;
+
         }
 
         return    new static();
     }
+
+    public static function orWhereIn (string $column  , array $value ) {
+       
+        self::checkColumns($column);
+
+        $placeholders = implode(", ", array_map(function($index) use ($column) {
+
+            $text = ":inOr$column$index" ;
+
+            return $text ;
+
+        }, array_keys($value)));
+
+
+        if(count(self::$executeOrWhereArray) == 0) {
+
+            self::$orWhereText .= " OR "." $column IN ($placeholders)";
+
+        }else{
+        
+            self::$orWhereText .= " AND $column IN ($placeholders)";
+
+        }
+
+        foreach ($value as $index => $val) {
+
+            self::$executeOrWhereArray[":inOr$column$index"] = $val;
+
+        }
+
+        return  new static();
+    }
+
     public function orderBy(string $column = "id" , string $order = "ASC") {
 
         self::checkColumns($column);
@@ -226,15 +297,17 @@ class Model {
             return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
         }
 
-        $where = self::$whereText ?  self::$whereText . " " : " ";
+        $where =  self::$whereText . " ";
+
+        $orWhereText = self::$orWhereText . " " ;
 
         $order = self::$orderText  ?  self::$orderText ." " : " ORDER BY id DESC ";
 
         str_replace("ASC" , "DESC" , $order);
 
-        $executeArray = array_merge(self::$executeWhereArray );
+        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray );
 
-        $query = "SELECT * FROM " . static::$table . $where . $order ;
+        $query = "SELECT * FROM " . static::$table . $where .   $orWhereText . $order ;
 
         $stmt = self::$db->prepare($query); 
 
@@ -243,6 +316,8 @@ class Model {
         $fetched = $stmt->fetch(PDO::FETCH_ASSOC );
 
         self::closeConnection();
+
+
 
         return $fetched;
     }
@@ -256,15 +331,17 @@ class Model {
             return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
         }
         
-        $where = self::$whereText ?  self::$whereText . " " : " ";
+        $where =  self::$whereText . " ";
+
+        $orWhereText = self::$orWhereText . " " ;
 
         $order = self::$orderText  ?  self::$orderText ." " : " ORDER BY id ASC ";
 
         str_replace("ASC" , "DESC" , $order);
 
-        $executeArray = array_merge(self::$executeWhereArray );
+        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray);
 
-        $query = "SELECT * FROM " . static::$table . $where . $order ;
+        $query = "SELECT * FROM " . static::$table . $where .   $orWhereText. $order ;
 
         $stmt = self::$db->prepare($query); 
 
@@ -276,6 +353,53 @@ class Model {
 
         return $fetched;
     }
+    public  function update(array $values){
+
+        if(self::$db == null) {
+            self::$db  = Database::connect();
+        }
+
+        $textChange = "";
+
+        $keyCheck =array_keys($values)[count($values) - 1];
+
+        foreach ($values as $key => $value) {
+
+            self::checkColumns( $key );
+
+            self::$executeUpdateArray [":update$key"] = $value;
+            
+            if($keyCheck  == $key) {
+
+                $textChange .= " $key = :update$key  "; 
+
+                continue ;
+            }
+
+            $textChange .= " $key = :update$key , "; 
+
+        }
+
+        if(count(self::$unknowColumns) > 0) {
+            return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
+        }
+
+        $where =  self::$whereText . " ";
+
+        $orWhereText = self::$orWhereText . " " ;
+
+        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray , self::$executeUpdateArray);
+
+        $query = "UPDATE " . static::$table ." SET ". $textChange  . $where .   $orWhereText;
+
+        $stmt = self::$db->prepare($query);
+
+        $stmt->execute($executeArray);
+
+        self::closeConnection();
+
+        return true;
+    }
     public static function get(){
         
         if(count(self::$unknowColumns) > 0) {
@@ -286,9 +410,11 @@ class Model {
 
         $order =  self::$orderText ." ";
 
-        $executeArray = array_merge(self::$executeWhereArray );
+        $orWhereText = self::$orWhereText . " " ;
 
-        $query = self::$query . $where . $order ; 
+        $executeArray = array_merge(self::$executeWhereArray  , self::$executeOrWhereArray);
+
+        $query = self::$query . $where . $orWhereText . $order ; 
 
         $stmt = self::$db->prepare($query); 
 
@@ -301,7 +427,7 @@ class Model {
         return   $fetched   ;
     }
 
-    public static function count() {
+    public static function count() : int  {
 
         if(self::$db == null) {
 
@@ -315,7 +441,7 @@ class Model {
 
         $item_number = $stmt->fetch(PDO::FETCH_ASSOC )["total"];
 
-        return ["total" => $item_number];
+        return  $item_number;
     }
 
 
@@ -347,10 +473,15 @@ class Model {
         $start_point = $limit * $page;
         
         $stmt = self::$db->prepare("SELECT * FROM  $table_name LIMIT  :start_point ,  :limit ");
+
         $stmt->bindValue(':start_point', $start_point, PDO::PARAM_INT);
+
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+
         $stmt->execute();
+
         $fetched = $stmt->fetchAll(PDO::FETCH_ASSOC );
+
         self::closeConnection();
 
         $pagination_data = [
@@ -365,13 +496,22 @@ class Model {
 
     public static function returnSchema() {
         $directory = 'database/migrations';
+
         $files = glob($directory . "/*.php");
+
         foreach ($files as $file) {
+
             $fileName = basename($file, '.php');
+
             if (strpos($fileName, '-') !== false) {
+
                 $parts = explode('-', $fileName);
+
                 $className = end($parts); 
-            } else {
+
+            } 
+            else {
+
                 $className = $fileName;
             }
         
@@ -400,34 +540,77 @@ class Model {
 
     }
 
-    public static function findById( int $value , string $column = "id" ) {
+    public static function findById( int $value  ) {
+        
         if(self::$db == null) {
 
             self::$db  = Database::connect();
 
         }
+
+        $column = static::$id ? static::$id : "id";
+
         $table_name = static::$table ;
+
         $query = "SELECT * FROM  $table_name  WHERE $column = :id ";
+
         $stmt = self::$db->prepare( $query);
-        $stmt->execute(['id' => $value]); 
-        $fetched = $stmt->fetch(PDO::FETCH_ASSOC );
+
+        $stmt->execute([":$column" => $value]); 
+
+        $stmt->setFetchMode(PDO::FETCH_CLASS, static::class);
+
+        $fetched = $stmt->fetch();
+
         self::closeConnection();
-        return $fetched;
+
+        return      $fetched;
     }
   
-    public static function delete($id) {
+    public static function delete() {
 
         $table_name = static::$table ;
-        $stmt = self::$db->prepare("DELETE FROM  $table_name WHERE id = :id ");
-        $stmt->execute(['id' => $id]);
+
+        $where =  self::$whereText . " ";
+
+        $orWhereText = self::$orWhereText . " " ;
+
+        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray);
+
+        $query = "DELETE FROM  $table_name $where  $orWhereText ";
+
+        $stmt = self::$db->prepare( $query);
+
+        $stmt->execute($executeArray);
+
         self::closeConnection();
-        return true;
+
+        return  true;
+    }
+
+    public static function deleteById($value) {
+
+        if(self::$db == null) {
+
+            self::$db  = Database::connect();
+
+        }
+
+        $column = static::$id ? static::$id : "id";
+
+        $table_name = static::$table ;
+
+        $query = "DELETE FROM  $table_name  WHERE $column = :id ";
+
+        $stmt = self::$db->prepare( $query);
+
+        $stmt->execute([":$column" => $value]); 
+
+        self::closeConnection();
+
+        return    true;
     }
     
-    
-
-
-
 }
 
 ?>

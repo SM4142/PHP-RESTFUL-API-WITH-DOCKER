@@ -8,11 +8,12 @@ class Users extends Model  {
 
       protected static $table = 'Users';
 
-      protected string $id = "id";
+      protected static string $id = "id";
 
-      protected array $nullAbleArray = [];
+      protected static array $nullAbleArray = [];
 
-      protected array $notNullArray = ["name", "email", "password"];
+      protected static array $notNullArray = ["name", "email", "password"];
 
-      protected array $hiddenArray = [];
+      protected static array $hiddenArray = [];
+      
 }

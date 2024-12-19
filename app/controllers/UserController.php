@@ -6,13 +6,11 @@ use app\classes\Response;
 use app\models\Users;
 
 class UserController {
-   public function index(  $get ) {
+   public function index(   ) {
 
-    $user = new Users();
-
-    $user->name = "semih";
-    $user->email = "semih@gmail.com";
-    Response::sendResponse($user->save());
+    $oldUser = Users::findById(4);
+    
+    Response::sendResponse(["message" => $oldUser->name ]);
     
    }
 
@@ -24,29 +22,60 @@ class UserController {
     ];
 
     $data = Request::Validation($rule);
+
+    $check = Users::where("email" , $data->email)->first();
+
+    if($check){
+
+        Response::sendResponse(["message" => "Email already exist"]);
+
+        exit;
+
+    }
+
     Response::sendResponse($data);
+    
    }
 
    public function register(){
+
     $rule = [
-    "name" =>["min-length" => 5 ,  "max-length" => 20] , 
-    "password" =>["min-length" => 6 , "max-length" => 20],
-    "email" =>["mail" => true]
+
+        "name" =>["min-length" => 5 ,  "max-length" => 20] , 
+
+        "password" =>["min-length" => 6 , "max-length" => 20],
+
+        "email" =>["mail" => true , "exist" => true]
+
     ];
 
     $data = Request::Validation($rule);
-    Response::sendResponse($data);
+
+    $check = Users::where("email" , $data->email)->first();
+
+    if($check){
+
+        Response::sendResponse(["message" => "Email already exist"]);
+
+        exit;
+
+    }
+
+    $user = new Users();
+
+    $user->name = $data->name;
+
+    $user->email = $data->email;
+
+    $password = hash("sha256" , $data->password);
+
+    $user->password = $password ;
+
+    $user->save();
+
+    Response::sendResponse(["message" => $data->name]);
    }
 
-   public function handle($id = null, $page = null) {
-    if ($id === null && $page === null) {
-        echo "API Root Reached!";
-    } elseif ($page === null) {
-        echo "ID: $id";
-    } else {
-        echo "ID: $id, Page: $page";
-    }
-}
    
 }   
 ?>

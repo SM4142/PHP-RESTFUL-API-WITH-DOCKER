@@ -80,7 +80,7 @@ class Route {
         for ($i = count($path_array) - 1; $i >= 0; $i--) {
 
             $pattern = "@^" . preg_replace('/{([\w]+)\??}/', '([\w-]*)?', $path_array[$i]) . "$@";
-
+            
             if (preg_match($pattern, $path_main, $matches)) {
                 $parts = explode('/', $path_array[$i]);
                 array_shift($parts);
