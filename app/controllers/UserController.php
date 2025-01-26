@@ -8,9 +8,9 @@ use app\models\Users;
 class UserController {
    public function index(   ) {
 
-    $oldUser = Users::findById(4);
     
-    Response::sendResponse(["message" => $oldUser->name ]);
+    
+    Response::sendResponse(["message" => "hello" ]);
     
    }
 

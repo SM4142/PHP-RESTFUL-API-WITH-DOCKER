@@ -14,7 +14,7 @@ RUN apt-get update -y && apt-get install -y \
     libpng-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN docker-php-ext-install gettext intl pdo pdo_mysql pdo_pgsql pdo_sqlite gd
+RUN docker-php-ext-install gettext intl pdo_mysql pdo_pgsql pdo_sqlite gd
 
 RUN docker-php-ext-configure gd --enable-gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) gd

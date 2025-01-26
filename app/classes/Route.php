@@ -3,7 +3,6 @@
 namespace app\classes;
 
 
-
 class Route {
 
     public static function GET ( $path , $controller){
@@ -84,38 +83,52 @@ class Route {
             array_shift( $required_array);
          
             foreach ( $required_array as $part) {
+                // we check if there is a required parameter one by one 
                 if (strpos($part, '{') !== false && strpos($part, '?') === false) {
+
                     $required_part = str_replace(['{', '}'], '', $part);
+                    // if there is a required parameter we remove the {  } and add it to the required parameter array
                     $hold_required_name_array[] = $required_part;
                 }
             }
             
         }
-        var_dump($hold_required_name_array);
+        
         for ($i = count($path_array) - 1; $i >= 0; $i--) {
 
+            // we create a pattern to check the parameters
             $pattern = "@^" . preg_replace('/{([\w]+)\??}/', '([\w-]*)?', $path_array[$i]) . "$@";
-            
+
             if (preg_match($pattern, $path_main, $matches)) {
+
                 $parts = explode('/', $path_array[$i]);
+                // We delte the main path
                 array_shift($parts);
+                
                 $hold_name_array = [];
+
                 foreach ($parts as $part) {
+                    // We check here only it is a parameter 
                     if (strpos($part, '{') !== false) {
                         $cleaned_part = str_replace(['{', '}', '?'], '', $part);
                         $hold_name_array[] = $cleaned_part;
                     }
                 }
 
+                // We delete empty values
                 array_shift($matches);
 
-               $data = array_combine($hold_name_array, $matches);
+                // we combine the names and values
+                $data = array_combine($hold_name_array, $matches);
+
+                // We check required parameters is exist in data
                 foreach ($hold_required_name_array as $value){
                     if(! isset($data[$value])  ){
                         Response::sendResponse(["message" => "Missing required parameter: $value"], 400);
                         exit;
                     }
                 }
+                // if exist we run the controller
                 self::run($controller, $data);
                 exit;
             }
@@ -123,20 +136,26 @@ class Route {
     }
     
     private static function run($controller ,  $params = []) {
+        // We check if the controller is a array or not
         if (!is_array($controller)) {
+            // if not we run the function with params
             call_user_func($controller , $params);
             exit;
         }
+        // If it is an array first element is the class and second element is the method
         $class = $controller[0];
         $method = $controller[1];
-    
+        // We create a new instance of the class
         $controllerInstance = new $class();
+
         if (!method_exists($controllerInstance, $method)) {
+            // If the method is not found
             Response::sendResponse(["message" => "Method not found."], 400);
             exit;
         }
-    
+        // If the method is found we run it
         call_user_func_array([$controllerInstance, $method], [$params]);
+        
         exit;
     }
 
