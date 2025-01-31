@@ -6,7 +6,7 @@ use app\classes\Response;
 use app\models\Users;
 
 class UserController {
-   public function index(   ) {
+   public function index( $get  ) {
 
     
     

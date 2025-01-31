@@ -13,4 +13,5 @@ You can use a controller to hold function or you can use just fuction.
 if you set params you have just get a value in function it gives you params as array.
 --Response
 This is another class we'll ussually use to return something.
-if you want to return json data you should use Response::sendResponse function
+if you want to return json data you should use Response::sendResponse function.
+how to use you can use like that

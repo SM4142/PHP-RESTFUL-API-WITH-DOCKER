@@ -20,7 +20,7 @@ date_default_timezone_set($_ENV['TIMEZONE']);
 
 
 
-require_once __DIR__ . '/routes/Route.php';
+require_once __DIR__ . '/routes/Routes.php';
 
 
 

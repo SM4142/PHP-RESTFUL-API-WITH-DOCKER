@@ -2,44 +2,75 @@
 
 namespace app\classes;
 
+use Closure;
+use Exception;
 
 class Route {
+    private static array $routesArray = [];
+    private static int $numberOfRoutes = 0 ;
+    private static  bool $checkNumberOfRoutes = false;
+
+    private static $undefinedPage = [] ;
 
     public static function GET ( $path , $controller){
-        $method = "GET";
-        
-        return new self( $method , $path , $controller);
+    
+        self::$routesArray[] = [ "path" => $path , "controller" => $controller ,"method"=> "GET" ];
+        return new self( );
         
         // Creating new class
     }
     public static function POST ( $path , $controller){
-
-        $method = "POST";
-
-        return new self( $method , $path , $controller);
+       
+        self::$routesArray[] = [ "path" => $path , "controller" => $controller ,"method"=> "POST" ];
+        return new self( );
 
     }
     public static function PUT ($path , $controller){
-
-        $method = "PUT";
-
-        return new self( $method , $path , $controller);
+       
+        self::$routesArray[] = [ "path" => $path , "controller" => $controller ,"method"=> "PUT" ];
+        return new self( );
 
     }
     public static function DELETE ( $path , $controller){
-        $method= "DELETE";
 
-        return new self( $method , $path , $controller);
-
+        self::$routesArray[] = [ "path" => $path , "controller" => $controller ,"method"=> "DELETE" ];
+        return new self( );
        
     }
-    public function __construct($method , $path , $controller) {
+    public function __construct() {
 
-        // We call the routing function this method let us do the routing
+        if(self::$checkNumberOfRoutes == false) {
+            self::getNumberOfRoutes();
+            // We get the number of routes
+        }
 
-        Route::RoutingFunction( $method , $path , $controller);
+        if(self::$numberOfRoutes == count(self::$routesArray)) {
+           
+            foreach (self::$routesArray as $key => $route) {
+                
+                if($route["path"] == "/404"){
+              
+                    self::$undefinedPage[] = $route["controller"];
+                };
+                $this->RoutingFunction( $route["method"] , $route["path"] , $route["controller"] ,  $key , self::$numberOfRoutes);
+                  // We call the routing function this method let us do the routing
+            }   
+        }
+      
+    }
+    private static function getNumberOfRoutes () {
+        $route = 'routes/Routes.php'; 
+
+        $content = file_get_contents($route); 
+
+        preg_match_all('/Route::(GET|POST|PUT|DELETE)\s*\((.*?)\);/s', $content, $matches);
+        
+        self::$numberOfRoutes = count($matches[0]);
+
+        self::$checkNumberOfRoutes = true ;
 
     }
+
     public function middleware($middleware) {
         if (is_array($middleware)) {
             foreach ($middleware as $func) {
@@ -48,7 +79,7 @@ class Route {
         }
     }
 
-    private static function RoutingFunction($method, $path, $controller) {
+    private static function RoutingFunction($method, $path, $controller , $key ,$total) {
         $path_main = rtrim($_SERVER['REQUEST_URI'], '/'); 
         $method_main = $_SERVER['REQUEST_METHOD'];
         
@@ -132,6 +163,17 @@ class Route {
                 self::run($controller, $data);
                 exit;
             }
+        }
+
+        // If the path is not found
+
+        if($total == $key +1 ){
+            if(count(self::$undefinedPage) > 0){
+                //checking 404 is defined
+                self::run(self::$undefinedPage[0]);
+                exit;
+            }
+            Response::sendResponse(["message"=> "Path not found"],404);
         }
     }
     
