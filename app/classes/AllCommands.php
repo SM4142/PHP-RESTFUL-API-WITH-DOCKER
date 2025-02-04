@@ -82,7 +82,7 @@ class AllCommands{
         "    public static function up(Schema \$colum) {\n" .
         "        \$colum->Table(self::\$tableName);\n".
         "        \$colum->Id();\n" .
-          "      \$colum->SetTimestamps();" .
+        "        \$colum->SetTimestamps(); \n" .
         "        return \$colum;\n" .
         "    }\n\n" .
         "    public static function down(Schema \$colum) : Schema {\n" .

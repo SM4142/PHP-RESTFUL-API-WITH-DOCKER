@@ -181,8 +181,7 @@ class Schema {
             [
             "type" => "INT",
             "foreign_key" => $name,
-            "nullable" => true,
-            "default" => null,
+            "nullable" => false,
             "on_delete" => "CASCADE",
             "on_update" => "CASCADE",
             ]
@@ -197,17 +196,55 @@ class Schema {
         return $this;
     }
 
-    public function OnDelete(onAction $name ) {
+    public function OnDelete($name ) {
         if (isset($this->columns[$this->column])) {
-            $this->columns[$this->column]['on_delete'] =$name->value;
+                     
+            if($name == "SET NULL" || $name == "set null"){
+                $this->columns[$this->column]['on_delete'] =  "SET NULL";
+                $this->columns[$this->column]['nullable'] =  "true";
+                return $this;
+            } 
+            if($name == "CASCADE" || $name == "cascade"){
+                $this->columns[$this->column]['on_delete'] =  "CASCADE";
+                return $this;
+            }
+            if($name == "NO ACTION" || $name == "no action"){
+                $this->columns[$this->column]['on_delete'] =  "NO ACTION";
+                return $this;
+            }
+            if($name == "RESTRICT" || $name == "restrict"){
+                $this->columns[$this->column]['on_delete'] =  "RESTRICT";
+                return $this;
+            }
+            else{
+               error_log("on delete must be SET NULL,CASCADE,NO ACTION,RESTRICT");
+            }
+
         }
-        return $this;
     }
-    public function OnUpdate(onAction $name ) {
+    public function OnUpdate($name ) {
         if (isset($this->columns[$this->column])) {
-            $this->columns[$this->column]['on_update'] =$name->value;
+            if($name == "SET NULL" || $name == "set null"){
+                $this->columns[$this->column]['on_delete'] =  "SET NULL";
+                $this->columns[$this->column]['nullable'] =  "true";
+                return $this;
+            } 
+            if($name == "CASCADE" || $name == "cascade"){
+                $this->columns[$this->column]['on_delete'] =  "CASCADE";
+                return $this;
+            }
+            if($name == "NO ACTION" || $name == "no action"){
+                $this->columns[$this->column]['on_delete'] =  "NO ACTION";
+                return $this;
+            }
+            if($name == "RESTRICT" || $name == "restrict"){
+                $this->columns[$this->column]['on_delete'] =  "RESTRICT";
+                return $this;
+            }
+            else{
+               error_log("on delete must be SET NULL,CASCADE,NO ACTION,RESTRICT");
+            }
         }
-        return $this;
     }
     public function On(string $name ) {
         if (isset($this->columns[$this->column])) {
@@ -216,7 +253,7 @@ class Schema {
         return $this;
     }
     public function NullAble (bool $nullable ) {
-        if (isset($this->columns[$this->column])) {
+    if (isset($this->columns[$this->column])) {
             $this->columns[$this->column]['nullable'] = $nullable;
         }
         return $this;
