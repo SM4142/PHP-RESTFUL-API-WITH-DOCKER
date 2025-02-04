@@ -59,7 +59,7 @@ class AllCommands{
         }
 
         $date = new DateTime();
-        $date = $date->format('d-m-Y-H-i');
+        $date = $date->format('Y-m-d-His');
         $controllerFileName = $directory . "/" . $date . '-' . $name . '.php';
 
         if (file_exists($controllerFileName)) {
