@@ -4,7 +4,7 @@ namespace app\classes;
 use app\classes\Schema;
 
 class Migration{
-   
+    private static $db = null;
     public static function upTables() {
 
         $directory = 'database/migrations';
@@ -15,6 +15,8 @@ class Migration{
         }
     
         $files = glob($directory . "/*.php");
+
+        $fkArray = [];
 
         foreach ($files as $file) {
     
@@ -44,13 +46,51 @@ class Migration{
 
             $item = $itemClass->create();
 
-            if ($item === true) {
-                echo "$className migrated successfully\n";
+            if ($item === false) {
+                continue;
+            }
+            
+            echo "$className migrated successfully\n";
+
+            // we use foreign_array to finsh the table
+            if(isset($item["foreign_array"])) {
+
+                $create_table_sql = "ALTER TABLE " . " " . $item["table_name"] . " \n";
+
+                foreach ($item["foreign_array"] as $key => $value) {
+                    //checking here if it is the last key 
+                    explode("-", $value);
+                    $create_table_sql .= " ADD CONSTRAINT ". $item["fk"][$key] . " ". $value . (count($item["foreign_array"]) > $key + 1 ? " , \n" : "\n");
+
+                }
+                
+                $fkArray[] = $create_table_sql;
+
             }
           
         }
-    }
+
+        if(count($fkArray) > 0) {
+            
+            if(self::$db == null) {
+
+                self::$db  = Database::connect();
     
+            }
+
+            foreach ($fkArray as $key => $value) {
+
+                self::$db->exec($value);
+
+            }
+
+            self::CloseConnection() ;
+
+        }
+    }
+    private static function CloseConnection(){
+        self::$db = null;
+    }
 
     public static function downTables() {
 

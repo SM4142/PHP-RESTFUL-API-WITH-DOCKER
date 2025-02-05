@@ -5,16 +5,12 @@ namespace database\migrations;
 use app\classes\Schema;
 use app\classes\Migration;
 
-class PostsMigration extends Migration 
+class denemeMigration extends Migration 
 {
-    protected static $tableName = 'Posts';
+    protected static $tableName = 'deneme';
     public static function up(Schema $colum) {
         $colum->Table(self::$tableName);
         $colum->Id();
-        $colum->ForeignKey("users_id")->On("Users")->References("id");
-        $colum->ForeignKey("deneme_id")->On("deneme")->References("id"); 
-        $colum->Text("title");
-        $colum->Text("body")->NullAble(true);
         $colum->SetTimestamps(); 
         return $colum;
     }

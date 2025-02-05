@@ -11,6 +11,7 @@ class Schema {
     private $table = "";
     private static $db = null;
     private $foreignArrayKeys = [];
+    private $holdingReferences = [];
 
     public function Id(string $name = "id") {
         $this->columns[$name] =
@@ -176,6 +177,7 @@ class Schema {
         return $this;
     }
     public function ForeignKey(string $name ) {
+        //saving foreign key name to use later
         $this->foreignArrayKeys[] = $name;
         $this->columns[$name] = 
             [
@@ -286,21 +288,26 @@ class Schema {
         return $this->columns ;
         
     }
-    public function Create () : bool {
+    public function Create () : bool | array{
 
+        // check if database is connected
         if(self::$db == null) {
 
             self::$db  = Database::connect();
 
         }
 
+        // check if table exists
         $stmt = self::$db->query("SHOW TABLES LIKE '$this->table'");
 
         $check = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+        //if table exists return false
         if(count($check) > 0) {
             return false;
         }
+
+        // we use foreach to create the table
 
         $create_table_sql ="CREATE TABLE IF NOT EXISTS $this->table (\n";
 
@@ -308,6 +315,7 @@ class Schema {
 
         foreach ($this->columns as $key => $value) {
 
+            //checking values is exists. If it is not exist we are making it ""
             $length = isset($value["length"]) ? '(' . $value["length"] .')' :"" ;
 
             $nullable = isset($value["nullable"]) && $value["nullable"] ? ' NULL ' : ' NOT NULL ';
@@ -316,6 +324,7 @@ class Schema {
 
             $default = "";
 
+            //special default values
             $defaultValues = array(
                 "CURRENT_TIMESTAMP",
                 "NULL",
@@ -332,8 +341,6 @@ class Schema {
                 $default = isset($value["default"]) ? ' DEFAULT ' . var_export($value["default"], true) : '' ;
             }
 
-            
-
             $unsigned = isset($value["unsigned"]) ? ' UNSIGNED' : '' ;
 
             $auto_increment = isset($value["auto_increment"]) ? ' AUTO_INCREMENT' : '' ;
@@ -343,37 +350,38 @@ class Schema {
             $references = isset($value["references"]) ? ' REFERENCES ' . $value["on"] . '(' . $value["references"] . ')' . 
                         " ON DELETE " . $value["on_delete"] . " ON UPDATE " . $value["on_update"] : '' ;
             
+            
+            // Creating an array to save the foreign keys and their references to use it later
             if(in_array($key, $this->foreignArrayKeys)) {
-
+                $this->holdingReferences[] = "fk_". explode("_" , $key)[0];
                 $foreign_array[] = $foreign_key . " ". $references  ;
 
             }
-       
+            
+            //if it is the last key we don't add `,` 
             if($columns_last_key == $key) {
-
-                $create_table_sql .= "$key " . $value["type"] . $length . " " . $nullable . " " . $unsigned . " " . $auto_increment . " " . $default . " " . $index . (count($this->foreignArrayKeys) > 0 ? " , \n" : "\n");
+                //checking foreign_array if it is exist we add ` , `
+                $create_table_sql .= "$key " . $value["type"] . $length . " " . $nullable . " " . $unsigned . " " . $auto_increment . " " . $default . " " . $index ."\n";
                 continue;
               
             }
 
             $create_table_sql .= "$key " . $value["type"] . $length ." " . $nullable . " ". $unsigned . " ". $auto_increment ." " . $default . " ". $index . " , \n";
 
-
         }
-        if(isset($foreign_array)) {
-            foreach ($foreign_array as $key => $value) {
-             
-                $create_table_sql .= $value . (count($foreign_array) > $key + 1 ? " , \n" : "\n");
 
-            }
-        }
         $create_table_sql .= ')';
-        
+        //we execute the query
+
         self::$db->exec($create_table_sql);
 
         $this->CloseConnection();
 
-        return true;    
+        if(! isset($foreign_array)) {
+            return true;
+        }
+
+        return ["table_name" => $this->table , "foreign_array" => $foreign_array , "fk" => $this->holdingReferences];    
         
     }
     public function Drop () : bool {
