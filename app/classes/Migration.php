@@ -10,6 +10,7 @@ class Migration{
         $directory = 'database/migrations';
 
         if (!file_exists($directory)) {
+            
             echo "No migrations found\n";
             return;
         }
@@ -23,10 +24,15 @@ class Migration{
             $fileName = basename($file, '.php');
 
             if (strpos($fileName, '-') !== false) {
+
                 $parts = explode('-', $fileName);
+
                 $className = end($parts); 
+
             } else {
+
                 $className = $fileName;
+
             }
 
             $newClassName = 'database\\migrations\\' . $className;
@@ -34,14 +40,19 @@ class Migration{
             require_once $file;
     
             if (!class_exists( $newClassName )) {
+
                 echo "Class $newClassName  not found in $file\n";
+
                 continue;
             }
     
             if (!method_exists( $newClassName , 'up')) {
+
                 echo "Class $newClassName  does not have an up method\n";
+
                 continue;
             }
+
             $itemClass = $newClassName::up(new Schema());
 
             $item = $itemClass->create();
@@ -55,19 +66,19 @@ class Migration{
             // we use foreign_array to finsh the table
             if(isset($item["foreign_array"])) {
 
-                $create_table_sql = "ALTER TABLE " . " " . $item["table_name"] . " \n";
+                $query = sprintf("ALTER TABLE %s \n", $item["table_name"]);
 
                 foreach ($item["foreign_array"] as $key => $value) {
                     //checking here if it is the last key 
-                    explode("-", $value);
-                    $create_table_sql .= " ADD CONSTRAINT ". $item["fk"][$key] . " ". $value . (count($item["foreign_array"]) > $key + 1 ? " , \n" : "\n");
+
+                    $query .= sprintf("ADD CONSTRAINT %s %s ", $item["fk"][$key] ,$value ) . (count($item["foreign_array"]) > $key + 1 ? " , \n" : "\n");
 
                 }
-                
-                $fkArray[] = $create_table_sql;
 
+                $fkArray[] =  $query ;
+                
             }
-          
+
         }
 
         if(count($fkArray) > 0) {
@@ -104,8 +115,12 @@ class Migration{
     
         $files = glob($directory . "/*.php");
         
-        $files  = array_reverse($files);
-        
+        $fkArray = [];
+
+        $classNameArray = [];
+
+        $classes = [];
+
         foreach ($files as $file) {
     
             $fileName = basename($file, '.php');
@@ -121,23 +136,106 @@ class Migration{
             require_once $file;
     
             if (!class_exists( $newClassName )) {
+
                 echo "Class $newClassName  not found in $file\n";
                 continue;
+            
             }
-    
+            
+            if (!method_exists( $newClassName , 'up')) {
+
+                echo "Class $newClassName  does not have an up method\n";
+                continue;
+                
+            }
+
             if (!method_exists( $newClassName , 'down')) {
+
                 echo "Class $newClassName  does not have an down method\n";
                 continue;
+
             }
 
-            $itemClass = $newClassName::down(new Schema());
+            $classes[]  = [
+                "class" => $newClassName,
+                "name" => $className
+            ] ;
 
-            $item = $itemClass->Drop();
+            $schema = $newClassName::up(new Schema());
+
+            $columns = $schema->returnSchema();
+
+            $table_name = $schema->returnTableName();
             
-            if ($item === true) {
-                echo "$className deleted successfully\n";
+            if(self::$db == null) {
+
+                self::$db  = Database::connect();
+            }
+
+           foreach( $columns as $key => $value) {
+
+                if(isset($value["foreign_key"])){
+
+                    
+                    $fkName = "fk_" . explode("_", $value["foreign_key"])[0];
+
+                    $query = "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE 
+                    WHERE TABLE_NAME = ? AND CONSTRAINT_NAME = ?";
+
+                    $stmt = self::$db->prepare($query);
+
+                    $stmt->execute([$table_name, $fkName]);
+                    
+                    if ($stmt->fetch()) {
+
+                        $query = sprintf("ALTER TABLE %s DROP CONSTRAINT %s", $table_name, $fkName);
+                        self::$db->exec($query);
+                      
+                        
+                    } 
+                    
+                
+                }
+                
+
+            }
+            
+            self::CloseConnection();
+
+        }
+
+        if(count($fkArray) > 0) {
+            
+
+            
+            foreach ($fkArray as $key => $array) {
+               
+                foreach ($array as $array_key => $value) {
+
+                    if(isset($value["foreign_key"])){
+                        echo $classNameArray[$key];
+                        $fkName = "fk_" . explode("_", $value["foreign_key"])[0];
+                      
+                    }
+
+                }
             }
         }
+
+        if(count($classes) > 0) {
+
+            foreach ($classes as $values) {
+    
+            
+                $schema = $values["class"]::down(new Schema());
+    
+                $schema->Drop();
+    
+                echo "$values[name] deleted successfully \n";
+    
+            }
+        }
+
     }
 
 

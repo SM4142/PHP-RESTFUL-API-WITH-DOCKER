@@ -28,6 +28,9 @@ class Schema {
     public function Table(string $name) {
         $this->table = $name;
     }
+    public function returnTableName() {
+        return $this->table;
+    }
     public function Boolean (string $name ) {
         $this->columns[$name] = 
             [
