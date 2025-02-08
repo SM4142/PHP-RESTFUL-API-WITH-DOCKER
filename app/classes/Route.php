@@ -59,6 +59,7 @@ class Route {
       
     }
     private static function getNumberOfRoutes () {
+        
         $route = 'routes/Routes.php'; 
 
         $content = file_get_contents($route); 
@@ -121,20 +122,50 @@ class Route {
                     // if there is a required parameter we remove the {  } and add it to the required parameter array
                     $hold_required_name_array[] = $required_part;
                 }
+                if(strpos($part, '{') !== false ){
+                    $params_Array[] = $part;
+                }
             }
             
         }
-        
+
         for ($i = count($path_array) - 1; $i >= 0; $i--) {
 
             // we create a pattern to check the parameters
             $pattern = "@^" . preg_replace('/{([\w]+)\??}/', '([\w-]*)?', $path_array[$i]) . "$@";
 
-            if (preg_match($pattern, $path_main, $matches)) {
+            if( !strpos($path_array[count($path_array) - 1] , '{') !== false && strpos($part, '?') === false){
+               continue;
+            }
 
-                $parts = explode('/', $path_array[$i]);
-                // We delte the main path
-                array_shift($parts);
+            // we'll slice the path to compare with parts
+            $sliced_path = explode('/', $path);
+
+            array_shift($sliced_path);
+
+            // we slice path one by one "/" "/api" "api/login
+            $parts = explode('/', $path_array[$i]);
+
+            array_shift($parts);
+
+            // we use a counter here to count the number of parameters
+            $check_path_longh = 0;
+            
+            foreach ($sliced_path as $part) {
+
+                if(strpos($part, '{') !== false ){
+
+                    $check_path_longh++;
+
+                }
+            }
+
+            // if the sliced path is less than sliced_path - check_path_longh or greater than sliced_path we continue
+            if (count($parts) < count($sliced_path) - $check_path_longh || count($parts) > count($sliced_path)) {
+                continue;
+            }
+           
+            if (preg_match($pattern, $path_main, $matches)) {
                 
                 $hold_name_array = [];
 
@@ -163,6 +194,7 @@ class Route {
                 self::run($controller, $data);
                 exit;
             }
+            
         }
 
         // If the path is not found
