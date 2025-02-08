@@ -27,7 +27,7 @@ class Request {
 
             if(!$check ) {
 
-                Response::sendResponse(["message" => "$key is required"]);
+                Response::Json(["message" => "$key is required"]);
 
                 exit; 
 
@@ -37,7 +37,7 @@ class Request {
 
             if( $minLength  && strlen($check) < $value["min-length"]) {
 
-                Response::sendResponse(["message" => "$key must be greater than " . $value["min-length"]]);
+                Response::Json(["message" => "$key must be greater than " . $value["min-length"]]);
 
                 exit; 
 
@@ -46,7 +46,7 @@ class Request {
 
             if( $maxLength  && strlen($check) > $value["max-length"]) {
 
-                Response::sendResponse(["message" => "$key must be less than " . $value["max-length"]]);
+                Response::Json(["message" => "$key must be less than " . $value["max-length"]]);
 
                 exit; 
 
@@ -55,7 +55,7 @@ class Request {
 
             if( $mail && (strlen($check) < ( $value["min-length"] ?? 5) || strpos($check, '@') === false)) {
 
-                Response::sendResponse(["message" => "it must be a valid email"]);
+                Response::Json(["message" => "it must be a valid email"]);
 
                 exit; 
             }

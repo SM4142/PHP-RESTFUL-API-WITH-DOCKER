@@ -8,9 +8,7 @@ use app\models\Users;
 class UserController {
    public function index( $get  ) {
 
-    
-    
-    Response::sendResponse(["message" => "hello" ]);
+    Response::Json(["message" => "hello" ]);
     
    }
 
@@ -27,13 +25,13 @@ class UserController {
 
     if($check){
 
-        Response::sendResponse(["message" => "Email already exist"]);
+        Response::Json(["message" => "Email already exist"]);
 
         exit;
 
     }
 
-    Response::sendResponse($data);
+    Response::Json($data);
     
    }
 
@@ -55,7 +53,7 @@ class UserController {
 
     if($check){
 
-        Response::sendResponse(["message" => "Email already exist"]);
+        Response::Json(["message" => "Email already exist"]);
 
         exit;
 
@@ -73,7 +71,7 @@ class UserController {
 
     $user->save();
 
-    Response::sendResponse(["message" => $data->name]);
+    Response::Json(["message" => $data->name]);
    }
 
    

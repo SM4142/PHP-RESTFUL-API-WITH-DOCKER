@@ -4,7 +4,7 @@ namespace app\classes;
 
 class Response{
 
-    public static function sendResponse($response, $httpStatus = 200){
+    public static function Json($response, $httpStatus = 200){
         $response = json_encode($response);
         http_response_code($httpStatus);
         header('Content-Type: application/json');
@@ -12,7 +12,7 @@ class Response{
     }
 
 
-    Public static function sendImage($image){
+    Public static function Image($image){
         header('Content-Type: image/png');
         header('Content-Length: ' . filesize($image));
         readfile($image);

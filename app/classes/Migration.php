@@ -191,13 +191,11 @@ class Migration{
                         $query = sprintf("ALTER TABLE %s DROP CONSTRAINT %s", $table_name, $fkName);
                         self::$db->exec($query);
                       
-                        
                     } 
                     
                 
                 }
                 
-
             }
             
             self::CloseConnection();
@@ -205,8 +203,6 @@ class Migration{
         }
 
         if(count($fkArray) > 0) {
-            
-
             
             foreach ($fkArray as $key => $array) {
                
@@ -226,7 +222,6 @@ class Migration{
 
             foreach ($classes as $values) {
     
-            
                 $schema = $values["class"]::down(new Schema());
     
                 $schema->Drop();

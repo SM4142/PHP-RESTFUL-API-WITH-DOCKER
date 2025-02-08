@@ -186,7 +186,7 @@ class Route {
                 // We check required parameters is exist in data
                 foreach ($hold_required_name_array as $value){
                     if(! isset($data[$value])  ){
-                        Response::sendResponse(["message" => "Missing required parameter: $value"], 400);
+                        Response::Json(["message" => "Missing required parameter: $value"], 400);
                         exit;
                     }
                 }
@@ -205,7 +205,7 @@ class Route {
                 self::run(self::$undefinedPage[0]);
                 exit;
             }
-            Response::sendResponse(["message"=> "Path not found"],404);
+            Response::Json(["message"=> "Path not found"],404);
         }
     }
     
@@ -224,7 +224,7 @@ class Route {
 
         if (!method_exists($controllerInstance, $method)) {
             // If the method is not found
-            Response::sendResponse(["message" => "Method not found."], 400);
+            Response::Json(["message" => "Method not found."], 400);
             exit;
         }
         // If the method is found we run it

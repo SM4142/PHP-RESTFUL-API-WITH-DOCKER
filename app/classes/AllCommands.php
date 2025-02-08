@@ -43,7 +43,7 @@ class AllCommands{
         "{\n" .
         "    public function index()\n" .
         "    {\n" .
-        "        Response::sendResponse(['message' => 'Hello, World!']);\n" .
+        "        Response::Json(['message' => 'Hello, World!']);\n" .
         "    }\n" .
         "}\n";
 
@@ -110,7 +110,6 @@ class AllCommands{
             return;
         }
 
-
         $content = "<?php\n\n" .
         "namespace app\\models;\n\n" .
         "use app\classes\Model;\n\n" .
@@ -121,7 +120,9 @@ class AllCommands{
         file_put_contents($controllerFileName, $content);
 
         echo "Model $name created\n";
+        
         AllCommands::CreateMigration($name . "Migration");
+
     }
     public static function MigrateUp() {
         Migration::upTables();
