@@ -8,7 +8,7 @@ use app\models\Users;
 class UserController {
    public function index( $get  ) {
 
-    $user = Users::find(1);
+    $user = Users::where("name" ,"semih2" )->update(["name" => "semih"] );
 
     Response::Json(["message" => $user ]);
     

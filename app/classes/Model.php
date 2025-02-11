@@ -60,23 +60,37 @@ class Model {
             self::$db  = Database::connect();
         }
 
-        if(strlen(static::$query) == 0) {
-
-            if(count(self::$unknowColumns) > 0) {
+        if(count(static::$hiddenArray) > 0 && self::$query == "") {
                 
-                $hidden_columns = "";
-                
-                foreach (self::$unknowColumns as $key => $value) {
+            $hidden_columns = "";
 
-                    $hidden_columns .= "`$value` , ";
+            $schema = self::returnSchema() ;
+
+            $lastKey = array_key_last($schema);
+            
+            foreach ( $schema as $colum_key => $column) {
+                
+                if (! in_array($colum_key, static::$hiddenArray))  {
+
+                    if($colum_key == $lastKey) {
+                        
+                        $hidden_columns .= "`$colum_key` "; 
+                        continue;
+
+                    }
+
+                    $hidden_columns .= "`$colum_key`, "; 
+
                 }
-
-                $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
-
-                self::$query = $query ;
             }
 
-            SELF::$query = "SELECT * FROM " . static::$table;
+            $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
+            
+            self::$query = $query ;
+            
+        }elseif(self::$query == "") {
+
+            self::$query = "SELECT * FROM " . static::$table;
 
         }
 
@@ -172,8 +186,42 @@ class Model {
             self::$db  = Database::connect();
 
         }
+
+        if(count(static::$hiddenArray) > 0 && self::$query == "") {
+                
+            $hidden_columns = "";
+
+            $schema = self::returnSchema() ;
+
+            $lastKey = array_key_last($schema);
+            
+            foreach ( $schema as $colum_key => $column) {
+                
+                if (! in_array($colum_key, static::$hiddenArray))  {
+
+                    if($colum_key == $lastKey) {
+                        
+                        $hidden_columns .= "`$colum_key` "; 
+                        continue;
+
+                    }
+
+                    $hidden_columns .= "`$colum_key`, "; 
+
+                }
+            }
+
+            $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
+            
+            self::$query = $query ;
+            
+        }elseif(self::$query == "") {
+
+            self::$query = "SELECT * FROM " . static::$table;
+
+        }
         
-        $query =  sprintf("SELECT * FROM %s", static::$table);
+        $query =  self::$query ;
 
         $stmt = self::$db->prepare($query); 
 
@@ -490,22 +538,68 @@ class Model {
 
         }
 
+        if(count(static::$hiddenArray) > 0 && self::$query == "") {
+                
+            $hidden_columns = "";
+
+            $schema = self::returnSchema() ;
+
+            $lastKey = array_key_last($schema);
+            
+            foreach ( $schema as $colum_key => $column) {
+                
+                if (! in_array($colum_key, static::$hiddenArray))  {
+
+                    if($colum_key == $lastKey) {
+                        
+                        $hidden_columns .= "`$colum_key` "; 
+                        continue;
+
+                    }
+
+                    $hidden_columns .= "`$colum_key`, "; 
+
+                }
+            }
+
+            $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
+            
+            self::$query = $query ;
+            
+        }elseif(self::$query == "") {
+
+            self::$query = "SELECT * FROM " . static::$table;
+
+        }
+
         $page = $page - 1;
-        
-        $table_name = static::$table ;
 
         $item_number = self::count();
 
         $total_page = ceil($item_number / $limit);
 
         $start_point = $limit * $page;
+
+        $where =  self::$whereText . " ";
+
+        $order =  self::$orderText ." ";
+
+        $orWhereText = self::$orWhereText . " " ;
+
+        $executeArray = array_merge(self::$executeWhereArray  , self::$executeOrWhereArray);
+
+        $query = self::$query . $where . $orWhereText . $order . " LIMIT :limit OFFSET :start_point ";
+
+        $stmt = self::$db->prepare($query);
+
+        $stmt->bindValue(':start_point', (int) $start_point, PDO::PARAM_INT);
+
+        $stmt->bindValue(':limit', (int) $limit, PDO::PARAM_INT);
         
-        $stmt = self::$db->prepare("SELECT * FROM  $table_name LIMIT  :start_point ,  :limit ");
-
-        $stmt->bindValue(':start_point', $start_point, PDO::PARAM_INT);
-
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-
+        foreach ($executeArray as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        
         $stmt->execute();
 
         $fetched = $stmt->fetchAll(PDO::FETCH_ASSOC );
@@ -519,10 +613,11 @@ class Model {
             "data" =>  $fetched,
         ];
         
-        return  $pagination_data ;
+        return   $pagination_data ;
     } 
 
     public static function returnSchema() {
+        
         $directory = 'database/migrations';
 
         $files = glob($directory . "/*.php");
@@ -576,7 +671,7 @@ class Model {
 
         }
 
-        if(count(static::$hiddenArray) > 0) {
+        if(count(static::$hiddenArray) > 0 && self::$query == "") {
                 
             $hidden_columns = "";
 
@@ -603,8 +698,11 @@ class Model {
             $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
             
             self::$query = $query ;
+            
         }else{
+
             self::$query = "SELECT * FROM " . static::$table;
+
         }
 
         $column = static::$id ? static::$id : "id";
