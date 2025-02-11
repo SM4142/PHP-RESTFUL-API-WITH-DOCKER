@@ -6,6 +6,7 @@ use app\controllers\UserController;
 
 
 Route::GET('/api', [UserController::class, 'index']);
+Route::GET('/api/users/{id}', [UserController::class, 'users']);
 Route::POST('/api/login', [UserController::class,     'login']);
 Route::POST('/api/register', [UserController::class, 'register']);
 Route::GET('/admin/deneme22/{id}', [UserController::class, 'index']);

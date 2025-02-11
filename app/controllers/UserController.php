@@ -8,7 +8,9 @@ use app\models\Users;
 class UserController {
    public function index( $get  ) {
 
-    Response::Json(["message" => "hello" ]);
+    $user = Users::find(1);
+
+    Response::Json(["message" => $user ]);
     
    }
 

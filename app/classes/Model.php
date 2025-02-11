@@ -60,7 +60,25 @@ class Model {
             self::$db  = Database::connect();
         }
 
-        SELF::$query = "SELECT * FROM " . static::$table;
+        if(strlen(static::$query) == 0) {
+
+            if(count(self::$unknowColumns) > 0) {
+                
+                $hidden_columns = "";
+                
+                foreach (self::$unknowColumns as $key => $value) {
+
+                    $hidden_columns .= "`$value` , ";
+                }
+
+                $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
+
+                self::$query = $query ;
+            }
+
+            SELF::$query = "SELECT * FROM " . static::$table;
+
+        }
 
     }
 
@@ -147,15 +165,25 @@ class Model {
     }
 
 
-    public static function fetchAll() {
-       
-        $stmt = self::$db->prepare(self::$query); 
+    public static function all() {
+
+        if(self::$db == null) {
+
+            self::$db  = Database::connect();
+
+        }
+        
+        $query =  sprintf("SELECT * FROM %s", static::$table);
+
+        $stmt = self::$db->prepare($query); 
+
+        $stmt->execute();
 
         $fetched = $stmt->fetchAll(PDO::FETCH_ASSOC );
 
         self::closeConnection();
 
-        return $fetched;
+        return  $fetched;
         
     }
     public static function where (string $column  , string $value ) {
@@ -232,7 +260,7 @@ class Model {
 
         }
 
-        return    new static();
+        return  new static();
     }
 
     public static function orWhereIn (string $column  , array $value ) {
@@ -486,7 +514,7 @@ class Model {
 
         $pagination_data = [
             "total_page" => $total_page,
-            "current_page" => $page,
+            "current_page" => $page + 1,
             "total_item" => $item_number,
             "data" =>  $fetched,
         ];
@@ -540,7 +568,7 @@ class Model {
 
     }
 
-    public static function findById( int $value  ) {
+    public static function find( int $value  ) {
         
         if(self::$db == null) {
 
@@ -548,23 +576,50 @@ class Model {
 
         }
 
+        if(count(static::$hiddenArray) > 0) {
+                
+            $hidden_columns = "";
+
+            $schema = self::returnSchema() ;
+
+            $lastKey = array_key_last($schema);
+            
+            foreach ( $schema as $colum_key => $column) {
+                
+                if (! in_array($colum_key, static::$hiddenArray))  {
+
+                    if($colum_key == $lastKey) {
+                        
+                        $hidden_columns .= "`$colum_key` "; 
+                        continue;
+
+                    }
+
+                    $hidden_columns .= "`$colum_key`, "; 
+
+                }
+            }
+
+            $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
+            
+            self::$query = $query ;
+        }else{
+            self::$query = "SELECT * FROM " . static::$table;
+        }
+
         $column = static::$id ? static::$id : "id";
 
-        $table_name = static::$table ;
-
-        $query = "SELECT * FROM  $table_name  WHERE $column = :id ";
+        $query = self::$query .  " WHERE $column = :id ";
 
         $stmt = self::$db->prepare( $query);
 
         $stmt->execute([":$column" => $value]); 
 
-        $stmt->setFetchMode(PDO::FETCH_CLASS, static::class);
-
-        $fetched = $stmt->fetch();
+        $fetched = $stmt->fetch(PDO::FETCH_ASSOC );
 
         self::closeConnection();
 
-        return      $fetched;
+        return   $fetched ;
     }
   
     public static function delete() {

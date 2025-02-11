@@ -14,6 +14,6 @@ class Users extends Model  {
 
       protected static array $notNullArray = ["name", "email", "password"];
 
-      protected static array $hiddenArray = [];
+      protected static array $hiddenArray = ["password" , "name"];
       
 }
