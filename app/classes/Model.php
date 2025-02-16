@@ -24,15 +24,11 @@ class Model {
 
     protected static array $executeWhereArray = [];
 
-    protected static array $executeOrWhereArray = [];
-
     protected static array $executeOrderArray = [];
 
     protected static array $executeUpdateArray = [];
 
     protected static string $whereText = "";
-
-    protected static string $orWhereText = "";
 
     protected static string $orderText = "";
 
@@ -234,47 +230,56 @@ class Model {
         return  $fetched;
         
     }
-    public static function where (string $column  , string $operator  ,  $value ) {
+    public static function where ( $column  ,  $operator =null, $value = null ) {
 
-        self::checkColumns($column);
+        $numArgs = func_num_args();
+
+        if ($numArgs === 1 && is_callable($column)) {
+            $column(new static());
+
+            return new static();
+        }
+
+        if ($numArgs === 2) {
+            $value = $operator;
+            $operator = "="; 
+        }
 
         $placeholder = ":$column" . count(self::$executeWhereArray);
 
         if(count(self::$executeWhereArray) == 0) {
 
             self::$executeWhereArray[$placeholder] = $value;
-            self::$whereText .= " WHERE "." $column " . " $operator " . " $placeholder ";
+            self::$whereText .= " " . $column  . " ".$operator ." " . $placeholder ;
 
-        }else{
+        }else{  
 
             self::$executeWhereArray[$placeholder] = $value;
-            self::$whereText .= " AND $column = $placeholder ";
+            self::$whereText .= " AND " . $column  . " ".$operator ." " . $placeholder  ;
 
         }
 
         return new static();
 
     }
-    public static function orWhere (string $column  , string $value ) {
+    public static function orWhere ( $column  ,  $operator =null, $value = null ) {
+
+        $numArgs = func_num_args();
+
+        if ($numArgs === 2) {
+            $value = $operator;
+            $operator = "="; 
+        }
 
         self::checkColumns($column);
 
-        $placeholder = ":or$column" . count(self::$executeOrWhereArray);
+        $placeholder = ":or$column" . count(self::$executeWhereArray);
 
-        if(count(self::$executeOrWhereArray) == 0) {
+        self::$executeWhereArray[$placeholder] = $value;
 
-            self::$executeOrWhereArray[$placeholder] = $value;
+        self::$whereText .= " OR $column " . " $operator " . " $placeholder ";
 
-            self::$orWhereText .= " OR "." $column = $placeholder ";
-
-        }else{
-
-            self::$executeOrWhereArray[$placeholder] = $value;
-
-            self::$orWhereText .= " AND $column = $placeholder ";
-
-        }
-
+  
         return new static();
 
     }
@@ -311,6 +316,7 @@ class Model {
         return  new static();
     }
 
+
     public static function orWhereIn (string $column  , array $value ) {
        
         self::checkColumns($column);
@@ -324,19 +330,12 @@ class Model {
         }, array_keys($value)));
 
 
-        if(count(self::$executeOrWhereArray) == 0) {
+        self::$whereText .= " OR "." $column IN ($placeholders)";
 
-            self::$orWhereText .= " OR "." $column IN ($placeholders)";
-
-        }else{
-        
-            self::$orWhereText .= " AND $column IN ($placeholders)";
-
-        }
 
         foreach ($value as $index => $val) {
 
-            self::$executeOrWhereArray[":inOr$column$index"] = $val;
+            self::$executeWhereArray[":inOr$column$index"] = $val;
 
         }
 
@@ -375,15 +374,15 @@ class Model {
 
         $where =  self::$whereText . " ";
 
-        $orWhereText = self::$orWhereText . " " ;
-
         $order = self::$orderText  ?  self::$orderText ." " : " ORDER BY id DESC ";
 
         str_replace("ASC" , "DESC" , $order);
 
-        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray );
+        $executeArray = self::$executeWhereArray ;
 
-        $query = "SELECT * FROM " . static::$table . $where .   $orWhereText . $order ;
+        $isWhere = count(self::$executeWhereArray) > 0 ? " WHERE " : "" ;
+
+        $query = self::$query . $isWhere . $where .$order . " LIMIT 1 ";
 
         $stmt = self::$db->prepare($query); 
 
@@ -393,9 +392,8 @@ class Model {
 
         self::closeConnection();
 
-
-
         return $fetched;
+
     }
     public static function first(){
 
@@ -407,17 +405,17 @@ class Model {
             return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
         }
         
-        $where =  self::$whereText . " ";
-
-        $orWhereText = self::$orWhereText . " " ;
+        $where =  self::$whereText . " ";" " ;
 
         $order = self::$orderText  ?  self::$orderText ." " : " ORDER BY id ASC ";
 
         str_replace("ASC" , "DESC" , $order);
 
-        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray);
+        $executeArray = self::$executeWhereArray ;
 
-        $query = "SELECT * FROM " . static::$table . $where .   $orWhereText. $order ;
+        $isWhere = count(self::$executeWhereArray) > 0 ? " WHERE " : "" ;
+
+        $query = self::$query . $isWhere . $where .$order . " LIMIT 1 ";
 
         $stmt = self::$db->prepare($query); 
 
@@ -462,11 +460,9 @@ class Model {
 
         $where =  self::$whereText . " ";
 
-        $orWhereText = self::$orWhereText . " " ;
+        $executeArray = self::$executeWhereArray ;
 
-        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray , self::$executeUpdateArray);
-
-        $query = "UPDATE " . static::$table ." SET ". $textChange  . $where .   $orWhereText;
+        $query = "UPDATE " . static::$table ." SET ". $textChange  . $where ;
 
         $stmt = self::$db->prepare($query);
 
@@ -486,11 +482,11 @@ class Model {
 
         $order =  self::$orderText ." ";
 
-        $orWhereText = self::$orWhereText . " " ;
+        $executeArray = self::$executeWhereArray ;
 
-        $executeArray = array_merge(self::$executeWhereArray  , self::$executeOrWhereArray);
+        $isWhere = count(self::$executeWhereArray) > 0 ? " WHERE " : "" ;
 
-        $query = self::$query . $where . $orWhereText . $order ; 
+        $query = self::$query . $isWhere . $where .$order ;
 
         $stmt = self::$db->prepare($query); 
 
@@ -500,7 +496,10 @@ class Model {
 
         self::closeConnection();
 
-        return   $fetched   ;
+        return  $fetched;
+       
+
+        return  ["query" => $query , "executeArray" => $executeArray];
     }
 
     public static function count() : int  {
@@ -584,11 +583,11 @@ class Model {
 
         $order =  self::$orderText ." ";
 
-        $orWhereText = self::$orWhereText . " " ;
+        $executeArray = self::$executeWhereArray ;
 
-        $executeArray = array_merge(self::$executeWhereArray  , self::$executeOrWhereArray);
+        $isWhere = count(self::$executeWhereArray) > 0 ? " WHERE " : "" ;
 
-        $query = self::$query . $where . $orWhereText . $order . " LIMIT :limit OFFSET :start_point ";
+        $query = self::$query . $isWhere . $where .$order . " LIMIT :limit OFFSET :start_point ";
 
         $stmt = self::$db->prepare($query);
 
@@ -726,11 +725,9 @@ class Model {
 
         $where =  self::$whereText . " ";
 
-        $orWhereText = self::$orWhereText . " " ;
+        $executeArray = self::$executeWhereArray ;
 
-        $executeArray = array_merge(self::$executeWhereArray , self::$executeOrWhereArray);
-
-        $query = "DELETE FROM  $table_name $where  $orWhereText ";
+        $query = "DELETE FROM  $table_name $where  ";
 
         $stmt = self::$db->prepare( $query);
 
