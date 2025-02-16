@@ -45,17 +45,42 @@ class Route {
         }
 
         if(self::$numberOfRoutes == count(self::$routesArray)) {
-           
+
+            $newRoutesArray = [];
+
+            $newRoutesParamsArray = [];
+    
             foreach (self::$routesArray as $key => $route) {
                 
                 if($route["path"] == "/404"){
               
                     self::$undefinedPage[] = $route["controller"];
                 };
-                $this->RoutingFunction( $route["method"] , $route["path"] , $route["controller"] ,  $key , self::$numberOfRoutes);
+
+                if((strpos($route["path"] , '{') !== false )){
+                   
+                    $newRoutesParamsArray [] = $route;
+                }
+                
+                else{
+
+                    $newRoutesArray [] = $route;
+                }
+        
                   // We call the routing function this method let us do the routing
             }   
+
+            $newRoutesArray = array_merge($newRoutesArray, $newRoutesParamsArray);
+
+            foreach ($newRoutesArray as $key => $route) {
+
+                self::RoutingFunction($route["method"], $route["path"], $route["controller"] , $key , count($newRoutesArray));
+
+            }
+         
+          
         }
+        
       
     }
     private static function getNumberOfRoutes () {

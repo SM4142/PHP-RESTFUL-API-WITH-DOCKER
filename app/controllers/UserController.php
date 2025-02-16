@@ -8,7 +8,7 @@ use app\models\Users;
 class UserController {
    public function index( $get  ) {
 
-    $user = Users::where("name" ,"semih2" )->update(["name" => "semih"] );
+    $user = Users::where("id" ,">", 13)->get();
 
     Response::Json(["message" => $user ]);
     
@@ -23,7 +23,7 @@ class UserController {
 
     $data = Request::Validation($rule);
 
-    $check = Users::where("email" , $data->email)->first();
+    $check = Users::where("email" ,"=", $data->email)->first();
 
     if($check){
 
@@ -51,7 +51,7 @@ class UserController {
 
     $data = Request::Validation($rule);
 
-    $check = Users::where("email" , $data->email)->first();
+    $check = Users::where("email" ,"=", $data->email)->first();
 
     if($check){
 

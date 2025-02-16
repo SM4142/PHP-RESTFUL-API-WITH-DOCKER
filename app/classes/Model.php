@@ -234,7 +234,7 @@ class Model {
         return  $fetched;
         
     }
-    public static function where (string $column  , string $value ) {
+    public static function where (string $column  , string $operator  ,  $value ) {
 
         self::checkColumns($column);
 
@@ -243,7 +243,7 @@ class Model {
         if(count(self::$executeWhereArray) == 0) {
 
             self::$executeWhereArray[$placeholder] = $value;
-            self::$whereText .= " WHERE "." $column = $placeholder ";
+            self::$whereText .= " WHERE "." $column " . " $operator " . " $placeholder ";
 
         }else{
 
@@ -343,7 +343,7 @@ class Model {
         return  new static();
     }
 
-    public function orderBy(string $column = "id" , string $order = "ASC") {
+    public static function orderBy(string $column = "id" , string $order = "ASC") {
 
         self::checkColumns($column);
 
