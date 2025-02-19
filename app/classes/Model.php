@@ -40,7 +40,23 @@ class Model {
     protected static array $attributes = [];
     // get and set things ends
 
-
+    protected static array $operatorsWhere = [
+        '=',
+        '!=',
+        '<>',
+        '>',
+        '<',
+        '>=',
+        '<=',
+        'LIKE',
+        'NOT LIKE',
+        'IN',
+        'NOT IN',
+        'BETWEEN',
+        'NOT BETWEEN',
+        'IS NULL',
+        'IS NOT NULL',
+    ];
 
     public function __set($name, $value) {
         static::$attributes[$name] = $value;
@@ -166,6 +182,7 @@ class Model {
         self::closeConnection();
         
         return   static::$attributes ;
+
         if(count(self::$unknowColumns) > 0) {
             return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
         }
@@ -230,116 +247,153 @@ class Model {
         return  $fetched;
         
     }
-    public static function where ( $column  ,  $operator =null, $value = null ) {
+    private static function generatePlaceHolders( $values , $column  ) {
 
-        $numArgs = func_num_args();
+        $placeholders = [];
+
+        foreach ($values as $index => $val) {
+
+            $placeholder = ":$column" . count(self::$executeWhereArray)  ;
+            
+            self::$executeWhereArray[$placeholder] = $val;
+
+            $placeholders[] = $placeholder;
+        }
+
+        return $placeholders;
+        
+    }
+
+    private static function checkWhere( $numArgs , $column, $operator, $value ,  $whereTypeOr = false) {
 
         if ($numArgs === 1 && is_callable($column)) {
+
             $column(new static());
 
             return new static();
+
         }
 
         if ($numArgs === 2) {
+
             $value = $operator;
+
             $operator = "="; 
+        }
+
+        if($numArgs === 3 &&  in_array(strtoupper($operator), static::$operatorsWhere) === false   ){
+            
+            Response::Json(["message" => "Undefined operator ". $operator]);
+
+            exit;
         }
 
         $placeholder = ":$column" . count(self::$executeWhereArray);
 
-        if(count(self::$executeWhereArray) == 0) {
+        self::checkColumns($column);
 
-            self::$executeWhereArray[$placeholder] = $value;
-            self::$whereText .= " " . $column  . " ".$operator ." " . $placeholder ;
+        $countExecuteWhereArray = count(self::$executeWhereArray) > 0 ? ( $whereTypeOr == false ? "AND" : "OR") : "";
 
-        }else{  
+        if( strtoupper($operator) == "BETWEEN" || strtoupper($operator) == "NOT BETWEEN") {
+            
+            if(! is_array($value) || count($value) != 2) {
 
-            self::$executeWhereArray[$placeholder] = $value;
-            self::$whereText .= " AND " . $column  . " ".$operator ." " . $placeholder  ;
+                Response::Json(["message" => "".$operator." must be an array with 2 values!"]);
+                exit;
+            }
+
+            $generated = self::generatePlaceHolders($value, $column);
+
+            self::$whereText .= " $countExecuteWhereArray " . $column  . " ".$operator ." " . $generated[0]   . " AND " . $generated[1]  ;
+
+            return new static();
 
         }
 
+        if( strtoupper($operator) == "IN" || strtoupper($operator) == "NOT IN") {
+            
+            if(! is_array($value) ) {
+
+                Response::Json(["message" => "$operator must be an array with values!"]);
+                exit;
+            }
+
+            self::whereInHandle($column, $value , $whereTypeOr , strtoupper($operator) );
+
+            return new static();
+
+        }
+
+        self::$executeWhereArray[$placeholder] = $value;
+     
+        self::$whereText .= " $countExecuteWhereArray " . $column  . " $operator ". $placeholder ;
+
         return new static();
+        
+    }
+    public static function where ( $column  ,  $operator =null, $value = null ) {
+
+        $numArgs = func_num_args();
+
+        self::checkWhere( $numArgs , $column, $operator, $value );
+
+      return new static();
 
     }
     public static function orWhere ( $column  ,  $operator =null, $value = null ) {
 
         $numArgs = func_num_args();
 
-        if ($numArgs === 2) {
-            $value = $operator;
-            $operator = "="; 
-        }
+        self::checkWhere( $numArgs , $column, $operator, $value , true);
 
-        self::checkColumns($column);
-
-        $placeholder = ":or$column" . count(self::$executeWhereArray);
-
-        self::$executeWhereArray[$placeholder] = $value;
-
-        self::$whereText .= " OR $column " . " $operator " . " $placeholder ";
-
-  
         return new static();
 
     }
 
-    public static function whereIn (string $column  , array $value ) {
-       
+    private static function whereInHandle ( $column  , array $value  ,  $whereTypeOr = false , $operator = "IN") {
+
         self::checkColumns($column);
 
-        $placeholders = implode(", ", array_map(function($index) use ($column) {
+        $generated = self::generatePlaceHolders($value, $column);
 
-            $text = ":in$column$index" ;
+        $placeholders = "(" . implode(", ", $generated) . ")";
 
-            return $text ;
+        $executeWhereArray = count(self::$executeWhereArray) != 0 ? ( $whereTypeOr == false ? "AND" : "OR")  : "" ;
 
-        }, array_keys($value)));
-
-
-        if(count(self::$executeWhereArray) == 0) {
-
-            self::$whereText .= " WHERE "." $column IN ($placeholders)";
-
-        }else{
+        self::$whereText .= " $executeWhereArray $column $operator $placeholders";
         
-            self::$whereText .= " AND $column IN ($placeholders)";
+    }
 
-        }
-
-        foreach ($value as $index => $val) {
-
-            self::$executeWhereArray[":in$column$index"] = $val;
-
-        }
+    public static function whereIn (string $column  , array $value ) {
+       
+        self::whereInHandle($column, $value);
 
         return  new static();
+
     }
 
 
     public static function orWhereIn (string $column  , array $value ) {
-       
-        self::checkColumns($column);
 
-        $placeholders = implode(", ", array_map(function($index) use ($column) {
-
-            $text = ":inOr$column$index" ;
-
-            return $text ;
-
-        }, array_keys($value)));
-
-
-        self::$whereText .= " OR "." $column IN ($placeholders)";
-
-
-        foreach ($value as $index => $val) {
-
-            self::$executeWhereArray[":inOr$column$index"] = $val;
-
-        }
+        self::whereInHandle($column, $value , true);
 
         return  new static();
+
+    }
+
+    public static function whereNotIn (string $column  , array $value ) {
+
+        self::whereInHandle($column, $value, false, "NOT IN");
+
+        return  new static();
+    }
+    
+    public static function orWhereNotIn (string $column  , array $value ) {
+
+        self::whereInHandle($column, $value , true, "NOT IN");
+
+        return  new static();
+
     }
 
     public static function orderBy(string $column = "id" , string $order = "ASC") {
@@ -362,6 +416,7 @@ class Model {
 
         return new static();
     }
+
     public static function latest(){
 
         if(self::$db == null) {
@@ -496,10 +551,10 @@ class Model {
 
         self::closeConnection();
 
-        return  $fetched;
-       
-
+        return  $fetched; 
+     
         return  ["query" => $query , "executeArray" => $executeArray];
+
     }
 
     public static function count() : int  {

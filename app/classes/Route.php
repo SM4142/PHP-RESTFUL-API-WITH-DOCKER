@@ -81,7 +81,6 @@ class Route {
           
         }
         
-      
     }
     private static function getNumberOfRoutes () {
         
@@ -191,6 +190,10 @@ class Route {
             }
            
             if (preg_match($pattern, $path_main, $matches)) {
+
+                if($method != $method_main){
+                    continue;
+                }
                 
                 $hold_name_array = [];
 

@@ -8,7 +8,7 @@ use app\models\Users;
 class UserController {
    public function index( $get  ) {
 
-    $user = Users::where("id" , 13)->orWhere("id" , 15)->where("name","semih2")->orWhere("name" , "semih3")->orWhereIn("name" , ["semih5" , "semih4"])->pagination(10);
+    $user = Users::where("id" ,'not between', [15, 20])->where("name","not like","%se%")->orWhereNotIn("id",[21,23])->get();
 
     Response::Json(["message" => $user ]);
     
