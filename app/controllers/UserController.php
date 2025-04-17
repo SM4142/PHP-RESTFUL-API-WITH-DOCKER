@@ -8,14 +8,17 @@ use app\models\Users;
 class UserController {
    public function index( $get  ) {
 
-    $user = Users::where("id" ,'not between', [15, 20])->where("name","not like","%se%")->orWhereNotIn("id",[21,23])->get();
+ 
+    $user = Users::find(1);
+  
+  
+    Response::Html("<div><h1 style ='color:red' >" . $user["email"] . "</h1></div>");
 
-    Response::Json(["message" => $user ]);
-    
-   }
 
+    }
 
    public function login(){
+    
     $rule = [
     "password" =>["min-length" => 6 , "max-length" => 20],
     "email" =>["mail" => true]
