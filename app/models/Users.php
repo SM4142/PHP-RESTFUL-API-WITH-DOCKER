@@ -10,9 +10,9 @@ class Users extends Model  {
 
       protected static string $id = "id";
 
-      protected static array $nullAbleArray = [];
+      protected static array $nullableColumns = ["role"];
 
-      protected static array $notNullArray = ["name", "email", "password"];
+      protected static array $nonNullableColumns = ["name", "email", "password"];
 
       protected static array $hiddenArray = ["password" ];
       

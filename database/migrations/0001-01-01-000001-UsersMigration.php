@@ -14,6 +14,7 @@ class UsersMigration extends Migration
         $colum->Text('name');
         $colum->Text('email')->Unique();
         $colum->Text('password');
+        $colum->Text('role')->Default('user');
         $colum->SetTimestamps();
         return $colum;
     }

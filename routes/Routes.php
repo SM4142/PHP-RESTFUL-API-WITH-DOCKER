@@ -23,3 +23,4 @@ Route::GET('/admin/deneme2/{id}/{id2?}', function ($get) {
 });
 
 ?>
+    

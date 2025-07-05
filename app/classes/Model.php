@@ -7,37 +7,52 @@ use PDO;
 class Model {
 
     protected static  $table ;
+    // table name
 
     protected static string $id ;
+    // table primary id
+
+    private static $schema = [];
 
     private static $db = null;
+    // db connection
 
-    protected static array $nullAbleArray = [];
+    protected static array $nullableColumns = [];
+    // don't need to create
 
-    protected static array $notNullArray = [];
+    protected static array $nonNullableColumns = [];
+    // need to create
 
     protected static array $hiddenArray = [];
+    // hidden columns
 
     // execute things start
 
-    protected static $query ="";
+    protected static $query ="";    
+    // final query
 
     protected static array $executeWhereArray = [];
+    // holding where values and keys to bind
 
     protected static array $executeOrderArray = [];
+    // holding order values and keys to bind
 
     protected static array $executeUpdateArray = [];
 
     protected static string $whereText = "";
+    // query for where
 
     protected static string $orderText = "";
+     // query for order
 
      // execute things ends
 
-    protected static array $unknowColumns = [];
+    protected static array $unknownColumns = [];
 
     // get and set things start
+
     protected static array $attributes = [];
+
     // get and set things ends
 
     protected static array $operatorsWhere = [
@@ -58,6 +73,12 @@ class Model {
         'IS NOT NULL',
     ];
 
+    // contain operators keys
+
+    private static $isChaining = false ;
+    // method calling
+
+
     public function __set($name, $value) {
         static::$attributes[$name] = $value;
     }
@@ -69,18 +90,27 @@ class Model {
     public  function __construct() {
 
         if(self::$db == null) {
+
             self::$db  = Database::connect();
+            // connect the db
+
         }
+        // check if the db is connected
 
         if(count(static::$hiddenArray) > 0 && self::$query == "") {
                 
             $hidden_columns = "";
 
-            $schema = self::returnSchema() ;
+            if( count(static::$schema) < 1){
 
-            $lastKey = array_key_last($schema);
+                static::$schema= self::returnSchema();
+                // taking schema
+
+            }
+
+            $lastKey = array_key_last(static::$schema);
             
-            foreach ( $schema as $colum_key => $column) {
+            foreach ( static::$schema as $colum_key => $column) {
                 
                 if (! in_array($colum_key, static::$hiddenArray))  {
 
@@ -97,7 +127,7 @@ class Model {
             }
 
             $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
-            
+       
             self::$query = $query ;
             
         }elseif(self::$query == "") {
@@ -110,20 +140,37 @@ class Model {
 
     private static  function closeConnection() {
 
-        if(self::$db == null) {
-            self::$db  = Database::connect();
-        }
+        if(self::$db != null) {
+
+            self::$db  = null;
+            // making the db null
+        }   
 
     }
+    //close the connection
+    
+
     public static function checkColumns(string $column) {
 
-        $columns = self::returnSchema();
+        if( count(static::$schema) < 1){
 
-        if(!isset($columns[$column])) {
-            self::$unknowColumns[] = $column;
-         }
+            static::$schema= self::returnSchema();
+            // taking schema
+
+        }
+        //check if the schema exist
+
+
+        if(!isset(static::$schema[$column])) {
+
+            self::$unknownColumns[] = $column;
+            // add columns to unknownColumns if columns is not exist in schema 
+
+        }
+        //check if the columns is exist in schema
 
     }
+
     public function save() {
 
         $schema = self::returnSchema();
@@ -142,7 +189,9 @@ class Model {
         }
 
         $query = "INSERT INTO " ."`" .  static::$table .  "`"  ;
+
         $keys = " ( ";
+
         $values = " VALUES ( ";
 
         $last_key = array_keys(static::$attributes)[count(static::$attributes) - 1];
@@ -183,14 +232,13 @@ class Model {
         
         return   static::$attributes ;
 
-        if(count(self::$unknowColumns) > 0) {
-            return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
+        if(count(self::$unknownColumns) > 0) {
+            return ["message" => "unknow columns ". implode(",", self::$unknownColumns)];
         }
 
         return self::returnSchema();
 
     }
-
 
     public static function all() {
 
@@ -247,6 +295,7 @@ class Model {
         return  $fetched;
         
     }
+
     private static function generatePlaceHolders( $values , $column  ) {
 
         $placeholders = [];
@@ -268,12 +317,20 @@ class Model {
 
         if ($numArgs === 1 && is_callable($column)) {
 
+            static::$whereText =  static::$whereText . ( count(self::$executeWhereArray) > 0 ? " AND ( "   : " ( ");
+
+            static::$isChaining = true;
+      
             $column(new static());
 
+            static::$whereText =  static::$whereText . " ) ";
+
+            static::$isChaining = false;
+          
             return new static();
-
+            
         }
-
+        
         if ($numArgs === 2) {
 
             $value = $operator;
@@ -292,7 +349,9 @@ class Model {
 
         self::checkColumns($column);
 
-        $countExecuteWhereArray = count(self::$executeWhereArray) > 0 ? ( $whereTypeOr == false ? "AND" : "OR") : "";
+        $countExecuteWhereArray = count(self::$executeWhereArray) > 0 ? ($whereTypeOr == false ? (static::$isChaining == false ?  "AND" : " ") : "OR") : "";
+
+    
 
         if( strtoupper($operator) == "BETWEEN" || strtoupper($operator) == "NOT BETWEEN") {
             
@@ -303,7 +362,7 @@ class Model {
             }
 
             $generated = self::generatePlaceHolders($value, $column);
-
+        
             self::$whereText .= " $countExecuteWhereArray " . $column  . " ".$operator ." " . $generated[0]   . " AND " . $generated[1]  ;
 
             return new static();
@@ -317,6 +376,7 @@ class Model {
                 Response::Json(["message" => "$operator must be an array with values!"]);
                 exit;
             }
+        
 
             self::whereInHandle($column, $value , $whereTypeOr , strtoupper($operator) );
 
@@ -328,9 +388,12 @@ class Model {
      
         self::$whereText .= " $countExecuteWhereArray " . $column  . " $operator ". $placeholder ;
 
+        static::$isChaining = false;
+
         return new static();
         
     }
+
     public static function where ( $column  ,  $operator =null, $value = null ) {
 
         $numArgs = func_num_args();
@@ -340,6 +403,7 @@ class Model {
       return new static();
 
     }
+
     public static function orWhere ( $column  ,  $operator =null, $value = null ) {
 
         $numArgs = func_num_args();
@@ -358,7 +422,10 @@ class Model {
 
         $placeholders = "(" . implode(", ", $generated) . ")";
 
-        $executeWhereArray = count(self::$executeWhereArray) != 0 ? ( $whereTypeOr == false ? "AND" : "OR")  : "" ;
+        $executeWhereArray =  count(self::$executeWhereArray) > 0 ? ($whereTypeOr == false ? (static::$isChaining == false ?  "AND" : " ") : "OR") : "";
+
+        static::$isChaining = false;
+
 
         self::$whereText .= " $executeWhereArray $column $operator $placeholders";
         
@@ -423,8 +490,8 @@ class Model {
             self::$db  = Database::connect();
         }
 
-        if(count(self::$unknowColumns) > 0) {
-            return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
+        if(count(self::$unknownColumns) > 0) {
+            return ["message" => "unknow columns ". implode(",", self::$unknownColumns)];
         }
 
         $where =  self::$whereText . " ";
@@ -450,14 +517,15 @@ class Model {
         return $fetched;
 
     }
+
     public static function first(){
 
         if(self::$db == null) {
             self::$db  = Database::connect();
         }
 
-        if(count(self::$unknowColumns) > 0) {
-            return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
+        if(count(self::$unknownColumns) > 0) {
+            return ["message" => "unknow columns ". implode(",", self::$unknownColumns)];
         }
         
         $where =  self::$whereText . " ";" " ;
@@ -482,6 +550,7 @@ class Model {
 
         return $fetched;
     }
+
     public  function update(array $values){
 
         if(self::$db == null) {
@@ -509,8 +578,8 @@ class Model {
 
         }
 
-        if(count(self::$unknowColumns) > 0) {
-            return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
+        if(count(self::$unknownColumns) > 0) {
+            return ["message" => "unknow columns ". implode(",", self::$unknownColumns)];
         }
 
         $where =  self::$whereText . " ";
@@ -529,16 +598,16 @@ class Model {
     }
     public static function get(){
         
-        if(count(self::$unknowColumns) > 0) {
-            return ["message" => "unknow columns ". implode(",", self::$unknowColumns)];
+        if(count(self::$unknownColumns) > 0) {
+            return ["message" => "unknow columns ". implode(",", self::$unknownColumns)];
         }
 
         $where =  self::$whereText . " ";
 
         $order =  self::$orderText ." ";
-
+     
         $executeArray = self::$executeWhereArray ;
-
+       
         $isWhere = count(self::$executeWhereArray) > 0 ? " WHERE " : "" ;
 
         $query = self::$query . $isWhere . $where .$order ;
@@ -552,8 +621,10 @@ class Model {
         self::closeConnection();
 
         return  $fetched; 
+        
      
         return  ["query" => $query , "executeArray" => $executeArray];
+     
 
     }
 
@@ -573,7 +644,6 @@ class Model {
 
         return  $item_number;
     }
-
 
     public static function pagination($limit , $page = 1) {
 

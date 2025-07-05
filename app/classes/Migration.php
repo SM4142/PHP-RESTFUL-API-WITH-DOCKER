@@ -178,7 +178,7 @@ class Migration{
 
                     
                     $fkName = "fk_" . explode("_", $value["foreign_key"])[0];
-
+            
                     $query = "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE 
                     WHERE TABLE_NAME = ? AND CONSTRAINT_NAME = ?";
 

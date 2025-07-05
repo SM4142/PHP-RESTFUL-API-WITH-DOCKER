@@ -6,14 +6,19 @@ use app\classes\Response;
 use app\models\Users;
 
 class UserController {
-   public function index( $get  ) {
+   public function  index( $get ) {
 
- 
-    $user = Users::find(1);
+    $user = Users::where("role" ,"admin")->where(function ($query){
   
-  
-    Response::Html("<div><h1 style ='color:red' >" . $user["email"] . "</h1></div>");
+        $query->where("name" , "In", ["semih" , "semih3"]);
 
+        $query->OrWhere("name" , "semih2");
+     
+    })->get();  
+
+    Response::Json($user);
+
+    // Response::Html("<div><h1 style ='color:red' >" . $user["email"] . "</h1></div>");
 
     }
 
