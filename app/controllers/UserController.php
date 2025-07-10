@@ -8,19 +8,21 @@ use app\models\Users;
 class UserController {
    public function  index( $get ) {
 
-    $user = Users::where("role" ,"admin")->where(function ($query){
+    // $user = Users::where("role" ,"admin")->where(function ($query){
   
-        $query->where("name" , "In", ["semih" , "semih3"]);
+    //     $query->where("name" , "In", ["semih" , "semih3"]);
 
-        $query->OrWhere("name" , "semih2");
+    //     $query->OrWhere("name" , "semih2");
      
-    })->get();  
+    // })->get();  
 
+    $user = Users::all();
+ 
+   
+   
     Response::Json($user);
 
-    // Response::Html("<div><h1 style ='color:red' >" . $user["email"] . "</h1></div>");
-
-    }
+   }
 
    public function login(){
     

@@ -97,45 +97,51 @@ class Model {
         }
         // check if the db is connected
 
+        static::checkHiddenColumns();
+        // if there are hidden columns they are not shown
+    }
+
+    private static function checkHiddenColumns (){
+
         if(count(static::$hiddenArray) > 0 && self::$query == "") {
                 
-            $hidden_columns = "";
+        $hidden_columns = "";
 
-            if( count(static::$schema) < 1){
+        if( count(static::$schema) < 1){
 
-                static::$schema= self::returnSchema();
-                // taking schema
+            static::$schema= self::returnSchema();
+            // taking schema
 
-            }
+        }
 
-            $lastKey = array_key_last(static::$schema);
+        $lastKey = array_key_last(static::$schema);
             
-            foreach ( static::$schema as $colum_key => $column) {
+        foreach ( static::$schema as $colum_key => $column) {
                 
-                if (! in_array($colum_key, static::$hiddenArray))  {
+            if (! in_array($colum_key, static::$hiddenArray))  {
 
-                    if($colum_key == $lastKey) {
+                if($colum_key == $lastKey) {
                         
-                        $hidden_columns .= "`$colum_key` "; 
-                        continue;
-
-                    }
-
-                    $hidden_columns .= "`$colum_key`, "; 
+                    $hidden_columns .= "`$colum_key` "; 
+                    continue;
 
                 }
-            }
 
-            $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
+                $hidden_columns .= "`$colum_key`, "; 
+
+            }
+        }
+
+        $query = sprintf("SELECT $hidden_columns FROM %s", static::$table);
        
-            self::$query = $query ;
+        self::$query = $query ;
+    
             
         }elseif(self::$query == "") {
 
             self::$query = "SELECT * FROM " . static::$table;
 
         }
-
     }
 
     private static  function closeConnection() {
@@ -494,6 +500,9 @@ class Model {
             return ["message" => "unknow columns ". implode(",", self::$unknownColumns)];
         }
 
+        static::checkHiddenColumns();
+        // if there are hidden columns they are not shown
+
         $where =  self::$whereText . " ";
 
         $order = self::$orderText  ?  self::$orderText ." " : " ORDER BY id DESC ";
@@ -527,6 +536,9 @@ class Model {
         if(count(self::$unknownColumns) > 0) {
             return ["message" => "unknow columns ". implode(",", self::$unknownColumns)];
         }
+
+        static::checkHiddenColumns();
+        // if there are hidden columns they are not shown
         
         $where =  self::$whereText . " ";" " ;
 

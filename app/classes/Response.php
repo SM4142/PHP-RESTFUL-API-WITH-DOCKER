@@ -9,12 +9,23 @@ class Response{
         http_response_code($httpStatus);
         header('Content-Type: application/json');
         echo $response;
+        
     }
 
     public static function Html($response, $httpStatus = 200){
         http_response_code($httpStatus);
         header('Content-Type: text/html; charset=utf-8');
         echo $response;
+
+    }
+
+    public static function View ($route , $data = []){
+        ob_start(null, 0);
+        $data = $data ;
+        include_once __DIR__ . '/../../view/'.  $route  . '.php';
+        $content = ob_get_clean();
+        Response::Html($content);
+
     }
 
 
