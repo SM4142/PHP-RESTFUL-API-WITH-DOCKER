@@ -18,9 +18,9 @@ class UserController {
 
     $user = Users::all();
  
-   
-   
-    Response::Json($user);
+
+
+    Response::View("Main" , ["users" => $user]);
 
    }
 

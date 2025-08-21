@@ -155,7 +155,6 @@ class Model {
     }
     //close the connection
     
-
     public static function checkColumns(string $column) {
 
         if( count(static::$schema) < 1){
@@ -444,8 +443,6 @@ class Model {
         return  new static();
 
     }
-
-
     public static function orWhereIn (string $column  , array $value ) {
 
         self::whereInHandle($column, $value , true);
@@ -563,7 +560,7 @@ class Model {
         return $fetched;
     }
 
-    public  function update(array $values){
+    public static function update(array $values){
 
         if(self::$db == null) {
             self::$db  = Database::connect();
@@ -608,6 +605,7 @@ class Model {
 
         return true;
     }
+
     public static function get(){
         
         if(count(self::$unknownColumns) > 0) {
@@ -795,11 +793,9 @@ class Model {
             }
           
         }
-
-
     }
 
-    public static function find( int $value  ) {
+    public static function find(int $value  ) {
         
         if(self::$db == null) {
 
@@ -895,7 +891,7 @@ class Model {
 
         self::closeConnection();
 
-        return    true;
+        return  true;
     }
     
 }

@@ -8,20 +8,20 @@ use app\classes\Migration;
 class UsersMigration extends Migration 
 {
     protected static $tableName = 'Users';
-    public static function up(Schema $colum) : Schema{
-        $colum->Table(self::$tableName);
-        $colum->Id();
-        $colum->Text('name');
-        $colum->Text('email')->Unique();
-        $colum->Text('password');
-        $colum->Text('role')->Default('user');
-        $colum->SetTimestamps();
-        return $colum;
+    public static function up(Schema $column) : Schema{
+        $column->Table(self::$tableName);
+        $column->Id();
+        $column->Text('name');
+        $column->Text('email')->Unique();
+        $column->Text('password');
+        $column->Text('role')->Default('user');
+        $column->SetTimestamps();
+        return $column;
     }
 
-    public static function down(Schema $colum) : Schema {
-       $colum->Table(self::$tableName);
-       return $colum;
+    public static function down(Schema $column) : Schema {
+       $column->Table(self::$tableName);
+       return $column;
     }
 
 }

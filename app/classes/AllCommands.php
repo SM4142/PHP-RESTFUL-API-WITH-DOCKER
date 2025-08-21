@@ -79,15 +79,15 @@ class AllCommands{
         "class $name extends Migration \n" .
         "{\n" .
         "    protected static \$tableName = '$newName[0]';\n" .
-        "    public static function up(Schema \$colum) {\n" .
-        "        \$colum->Table(self::\$tableName);\n".
-        "        \$colum->Id();\n" .
-        "        \$colum->SetTimestamps(); \n" .
-        "        return \$colum;\n" .
+        "    public static function up(Schema \$column) {\n" .
+        "        \$column->Table(self::\$tableName);\n".
+        "        \$column->Id();\n" .
+        "        \$column->SetTimestamps(); \n" .
+        "        return \$column;\n" .
         "    }\n\n" .
-        "    public static function down(Schema \$colum) : Schema {\n" .
-        "       \$colum->Table(self::\$tableName);\n".
-        "       return \$colum;\n" .
+        "    public static function down(Schema \$column) : Schema {\n" .
+        "       \$column->Table(self::\$tableName);\n".
+        "       return \$column;\n" .
         "    }\n\n" .
         "}\n";
 
@@ -127,7 +127,6 @@ class AllCommands{
     public static function MigrateUp() {
         Migration::upTables();
     }
-    
     
     public static function MigrateDown(){
        Migration::downTables();

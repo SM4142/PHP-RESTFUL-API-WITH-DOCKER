@@ -21,8 +21,8 @@ class Response{
 
     public static function View ($route , $data = []){
         ob_start(null, 0);
-        $data = $data ;
-        include_once __DIR__ . '/../../view/'.  $route  . '.php';
+        extract($data);
+        include_once __DIR__ . '/../../view/'.  $route . '.php';
         $content = ob_get_clean();
         Response::Html($content);
 
